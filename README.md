@@ -31,8 +31,9 @@ pretend that iOS can provide a continuously running Syncthing daemon.
 
 ## Current status
 
-Planning complete. The next task is the Phase 0 feasibility spike on a physical
-iPad. No production code should be built until both Phase 0 gates pass.
+Planning and the platform-neutral Go lifecycle scaffold are complete. The next
+gating task is the Phase 0 vault-access spike on a physical iPad. Syncthing
+integration and product UI remain behind the Phase 0 feasibility gates.
 
 See:
 

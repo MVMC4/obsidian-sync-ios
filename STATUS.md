@@ -4,9 +4,16 @@
 
 Phase 0 — feasibility gates.
 
+## Completed
+
+- Project architecture, risks, build workflow, and test workflow documented.
+- Repository licensed under MIT and prepared for public development.
+- Platform-neutral Go lifecycle facade implemented.
+- Go lifecycle tests and vet checks passing on Windows with Go 1.25.12.
+
 ## Next concrete task
 
-Build a tiny SwiftUI device spike that:
+Build a tiny SwiftUI device spike on macOS that:
 
 1. lets the user select `On My iPad/Obsidian/<vault>`;
 2. persists and resolves the returned bookmark;
@@ -26,4 +33,3 @@ Phase 0 of `docs/PROJECT_PLAN.md` both pass on a physical iPad.
 - Bookmark access can be revoked or become stale.
 - Syncthing metadata and identity must live in this app's own container, never
   inside the Obsidian vault.
-
