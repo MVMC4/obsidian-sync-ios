@@ -295,7 +295,7 @@ struct VaultAccessView: View {
 
     private var peerCard: some View {
         setupCard(title: "Computer", value: profiles.profile?.peerName ?? "Not configured",
-                  detail: profiles.profile.map { "Settings saved · not verified" } ?? "Add sync settings",
+                  detail: profiles.profile.map { _ in "Settings saved · not verified" } ?? "Add sync settings",
                   icon: "desktopcomputer", tint: VaultPalette.lilac,
                   actionTitle: profiles.profile == nil ? "Configure" : "Edit") {
             isShowingPairing = true
