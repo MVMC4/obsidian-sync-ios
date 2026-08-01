@@ -15,6 +15,43 @@ import (
 
 const integrationFolderID = "integration-vault"
 
+type delayedScanEngine struct {
+	fakeEngine
+	attempts   int
+	readyAfter int
+}
+
+func (e *delayedScanEngine) ConfigurePeer(string, string, string) error { return nil }
+func (e *delayedScanEngine) ConfigureFolder(string, string, string, string) error {
+	return nil
+}
+func (e *delayedScanEngine) FolderStatusJSON(string, string) (string, error) {
+	return `{}`, nil
+}
+func (e *delayedScanEngine) Scan(string) error {
+	e.attempts++
+	if e.attempts < e.readyAfter {
+		return fmt.Errorf("folder is not running")
+	}
+	return nil
+}
+
+func TestScanWhenFolderReadyRetriesTransientFailure(t *testing.T) {
+	eng := &delayedScanEngine{readyAfter: 3}
+	client := newClient(eng)
+	if err := client.Start(); err != nil {
+		t.Fatalf("start client: %v", err)
+	}
+	defer func() { _ = client.Stop() }()
+
+	if err := scanWhenFolderReady(client, integrationFolderID, time.Second); err != nil {
+		t.Fatalf("scanWhenFolderReady() error = %v", err)
+	}
+	if eng.attempts != 3 {
+		t.Fatalf("scan attempts = %d, want 3", eng.attempts)
+	}
+}
+
 func TestBidirectionalTransferBetweenIndependentProcesses(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("two-process listener test is verified by the Ubuntu CI runner")
@@ -86,7 +123,7 @@ func TestBidirectionalTransferBetweenIndependentProcesses(t *testing.T) {
 	if err := os.WriteFile(outboundPath, []byte(outboundContent), 0o600); err != nil {
 		t.Fatalf("write outbound note: %v", err)
 	}
-	if err := primary.Scan(integrationFolderID); err != nil {
+	if err := scanWhenFolderReady(primary, integrationFolderID, 10*time.Second); err != nil {
 		t.Fatalf("scan outbound note: %v", err)
 	}
 
@@ -149,7 +186,7 @@ func TestSyncthingPeerHelperProcess(t *testing.T) {
 	); err != nil {
 		t.Fatalf("configure helper folder: %v", err)
 	}
-	if err := client.Scan(integrationFolderID); err != nil {
+	if err := scanWhenFolderReady(client, integrationFolderID, 10*time.Second); err != nil {
 		t.Fatalf("initial helper scan: %v", err)
 	}
 	if err := os.WriteFile(os.Getenv("OBS_SYNC_READY_FILE"), []byte("ready"), 0o600); err != nil {
@@ -184,6 +221,20 @@ func TestSyncthingPeerHelperProcess(t *testing.T) {
 		}
 		replyCreated = true
 	}
+}
+
+func scanWhenFolderReady(client *Client, folderID string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		if err := client.Scan(folderID); err == nil {
+			return nil
+		} else {
+			lastErr = err
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return fmt.Errorf("folder did not become ready before timeout: %w", lastErr)
 }
 
 func newIntegrationClient(statePath, listenAddress string) (*Client, error) {
