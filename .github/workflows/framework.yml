@@ -1,6 +1,7 @@
 name: iOS checks
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -80,6 +81,56 @@ jobs:
             -destination "platform=iOS Simulator,id=$destination_id" \
             CODE_SIGNING_ALLOWED=NO \
             test
+
+      - name: Package unsigned app for a physical iPad
+        shell: bash
+        run: |
+          derived_data="$RUNNER_TEMP/device-derived-data"
+          package_root="$RUNNER_TEMP/device-package"
+          ipa_path="$GITHUB_WORKSPACE/ObsidianSync-unsigned.ipa"
+
+          xcodebuild \
+            -project app/ObsidianSync.xcodeproj \
+            -scheme ObsidianSync \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$derived_data" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+          app_path="$derived_data/Build/Products/Debug-iphoneos/ObsidianSync.app"
+          test -d "$app_path"
+          test -x "$app_path/ObsidianSync"
+
+          architectures="$(lipo -archs "$app_path/ObsidianSync")"
+          case " $architectures " in
+            *" arm64 "*) ;;
+            *)
+              echo "Expected an arm64 device binary, found: $architectures" >&2
+              exit 1
+              ;;
+          esac
+
+          rm -rf "$package_root"
+          mkdir -p "$package_root/Payload"
+          ditto "$app_path" "$package_root/Payload/ObsidianSync.app"
+          (
+            cd "$package_root"
+            ditto -c -k --sequesterRsrc --keepParent Payload "$ipa_path"
+          )
+
+          shasum -a 256 "$ipa_path" | tee "$ipa_path.sha256"
+
+      - name: Upload unsigned physical-device IPA
+        uses: actions/upload-artifact@v7
+        with:
+          name: ObsidianSync-unsigned-device-ipa
+          path: |
+            ObsidianSync-unsigned.ipa
+            ObsidianSync-unsigned.ipa.sha256
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Inspect framework slices
         run: |

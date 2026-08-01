@@ -57,6 +57,7 @@ See:
 - [Architecture](docs/ARCHITECTURE.md)
 - [Decisions and risks](docs/DECISIONS.md)
 - [Build and installation guide](docs/BUILDING.md)
+- [Install on an iPad from Windows](docs/WINDOWS_SIDELOAD.md)
 - [Build log](docs/BUILD_LOG.md)
 - [Test log](docs/TEST_LOG.md)
 - [Physical iPad test checklist](docs/PHYSICAL_IPAD_TEST_CHECKLIST.md)
