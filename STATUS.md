@@ -12,6 +12,9 @@ Phase 0 — feasibility gates.
 - Go lifecycle tests and vet checks passing on Windows with Go 1.25.12.
 - Released Syncthing `v2.1.1` engine embedded with persistent identity.
 - Peer, vault-folder, and explicit scan configuration implemented and tested.
+- Native SwiftUI folder picker and persistent bookmark subsystem implemented.
+- Coordinated vault create/read/edit/rename/delete spike implemented.
+- Unsigned app build and unit tests passing on an iPadOS 18.5 Simulator.
 
 ## Next concrete task
 
@@ -22,6 +25,9 @@ Build a tiny SwiftUI device spike on macOS that:
 3. creates, reads, edits, renames, and deletes a nested test file;
 4. repeats those operations after terminating and relaunching the app; and
 5. verifies that Obsidian sees the changes.
+
+The code for this spike is complete. The remaining task is signing, installing,
+and executing it on physical hardware.
 
 ## Exit condition
 

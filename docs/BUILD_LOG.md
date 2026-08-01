@@ -89,3 +89,29 @@ will remain attached to their corresponding workflow runs.
 - Verified remotely: format, vet, race detector, real engine integration, and
   coverage
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692178161
+
+## 2026-08-01 — Native vault-access spike
+
+- Host: GitHub-hosted macOS 15 runner
+- Xcode: 16.4
+- Simulator SDK: iOS 18.5
+- Revision: `3697dbc`
+- Result: generated the Xcode project and compiled the unsigned native app in 30
+  seconds
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692412836
+
+### Initial test-host failure
+
+- Revision: `e4b0f94`
+- Result: app compilation passed, but tests did not launch
+- Finding: a custom internal product name disagreed with XcodeGen's generated
+  unit-test host path
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692454987
+
+### Clean Simulator build and test
+
+- Revision: `5a8b29b`
+- Result: passed in 2 minutes 31 seconds
+- Verified: project generation, unsigned app compilation, app installation into
+  an iPad Pro 11-inch (M4) Simulator, and native unit tests
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692783055

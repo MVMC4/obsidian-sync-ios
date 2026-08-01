@@ -66,3 +66,18 @@ not exist.
 - Local statement coverage after remediation: 76.9%
 - Remote `go test -tags noassets -race -coverprofile=coverage.out ./...`: passed
 - Passing run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692178161
+
+## 2026-08-01 — Native vault-access spike tests
+
+- Host: iPad Pro 11-inch (M4) Simulator, iOS 18.5, Xcode 16.4
+- `VaultBookmarkStoreTests`: passed
+- `VaultSpikeRunnerTests`: passed
+- Covered: versioned bookmark-record persistence, clear behavior, rejection of
+  unknown schemas, coordinated create/read/edit/rename/delete operations, and
+  cleanup of the temporary test directory
+- The first test attempt did not launch because the generated test-host product
+  path was inconsistent; app compilation passed in that run
+- Corrected run: passed in 2 minutes 31 seconds
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692783055
+- Physical iPad folder-picker, relaunch, permission revocation, and Obsidian
+  visibility tests: not run

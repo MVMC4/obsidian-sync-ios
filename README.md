@@ -33,9 +33,11 @@ pretend that iOS can provide a continuously running Syncthing daemon.
 
 ## Current status
 
-Planning and the platform-neutral Go lifecycle scaffold are complete. The next
-gating task is the Phase 0 vault-access spike on a physical iPad. Syncthing
-integration and product UI remain behind the Phase 0 feasibility gates.
+The real Syncthing engine, peer and vault configuration, and manual scanning are
+implemented behind a narrow Go facade. A native SwiftUI vault-access spike now
+compiles and passes automated tests on an iPad Simulator. The next gating task is
+to run that spike against a disposable Obsidian vault on a physical iPad; a
+Simulator cannot prove cross-app folder permission behavior.
 
 See:
 

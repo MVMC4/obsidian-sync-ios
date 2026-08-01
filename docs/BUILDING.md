@@ -16,12 +16,20 @@ Xcode's iOS SDK, code signing, Simulator, provisioning, or device debugger.
 
 ## Development installation on an iPad
 
-Once the Xcode project exists:
+Generate the Xcode project on the Mac:
+
+```sh
+brew install xcodegen
+./scripts/generate-xcode-project.sh
+open app/ObsidianSync.xcodeproj
+```
+
+Then:
 
 1. Clone the repository onto the Mac.
 2. Install the pinned Go toolchain and mobile build dependencies.
 3. Run the repository's core build command to generate the XCFramework.
-4. Open the Xcode project or workspace.
+4. Open the generated Xcode project.
 5. In Xcode Settings, add the Apple Account used for development.
 6. Select the application target, open **Signing & Capabilities**, enable
    automatic signing, and choose the corresponding team.
@@ -35,6 +43,10 @@ the app, installs it, launches it, and attaches the debugger.
 No jailbreak, custom tablet sandbox, or Android-style APK sideloading is used.
 The application's normal folder picker requests permission for the Obsidian
 vault after the signed app is running.
+
+The generated `.xcodeproj` is intentionally not committed. `app/project.yml` is
+the reviewable source of truth, which prevents personal signing settings and
+machine-specific Xcode state from entering the repository.
 
 ## Apple Account choices
 
@@ -61,4 +73,3 @@ Go checks -> XCFramework build -> Xcode build/tests -> physical-device tests
 Every executed build is recorded in `BUILD_LOG.md`. Tests and their exact scope
 are recorded in `TEST_LOG.md`; a simulator pass is never reported as a physical
 device pass.
-
