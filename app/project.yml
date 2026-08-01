@@ -20,7 +20,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mvmc4.obsidian-sync-ios
-        PRODUCT_NAME: Vault Sync
+        PRODUCT_NAME: ObsidianSync
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Support/Info.plist
         CODE_SIGN_STYLE: Automatic
