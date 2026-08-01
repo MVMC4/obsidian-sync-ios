@@ -1,6 +1,6 @@
 import Foundation
 
-struct SyncActivityItem: Codable, Equatable {
+struct SyncActivityItem: Codable, Equatable, Identifiable {
     let path: String
     let direction: String
     let action: String
@@ -11,6 +11,8 @@ struct SyncActivityItem: Codable, Equatable {
     var stableID: String {
         "\(completedAt)|\(direction)|\(path)|\(action)"
     }
+
+    var id: String { stableID }
 
     var fileName: String {
         (path as NSString).lastPathComponent

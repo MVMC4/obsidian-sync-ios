@@ -17,6 +17,7 @@ final class SyncActivityTests: XCTestCase {
         XCTAssertEqual(snap.items.count, 2)
         XCTAssertEqual(snap.items[0].fileName, "a.md")
         XCTAssertEqual(snap.items[0].parentPath, "Notes")
+        XCTAssertEqual(snap.items[0].id, snap.items[0].stableID)
         XCTAssertNotEqual(snap.items[0].stableID, snap.items[1].stableID)
         XCTAssertTrue(snap.items[1].isIncoming)
     }
