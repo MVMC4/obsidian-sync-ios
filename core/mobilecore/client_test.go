@@ -163,6 +163,14 @@ func TestRealSyncthingEngineStartsAndStops(t *testing.T) {
 	if got := client.State(); got != StateRunning {
 		t.Fatalf("running state = %q, want %q", got, StateRunning)
 	}
+	eng := client.engine.(*syncthingEngine)
+	options := eng.config.Options()
+	if !slices.Equal(options.RawListenAddresses, []string{"tcp://:22000"}) {
+		t.Fatalf("listen addresses = %v, want TCP-only", options.RawListenAddresses)
+	}
+	if options.NATEnabled {
+		t.Fatal("NAT traversal is enabled, want disabled while QUIC/STUN is excluded")
+	}
 	if err := client.Stop(); err != nil {
 		t.Fatalf("Stop() error = %v", err)
 	}

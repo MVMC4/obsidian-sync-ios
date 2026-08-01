@@ -30,9 +30,10 @@ type syncthingEngine struct {
 	cert      tls.Certificate
 	deviceID  string
 
-	app    *syncthing.App
-	cancel context.CancelFunc
-	config config.Wrapper
+	app      *syncthing.App
+	cancel   context.CancelFunc
+	config   config.Wrapper
+	services sync.WaitGroup
 }
 
 func newSyncthingEngine(statePath string) (*syncthingEngine, error) {
@@ -82,7 +83,9 @@ func (e *syncthingEngine) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
 	eventLogger := events.NewLogger()
+	e.services.Add(1)
 	go func() {
+		defer e.services.Done()
 		_ = eventLogger.Serve(ctx)
 	}()
 
@@ -94,33 +97,40 @@ func (e *syncthingEngine) Start() error {
 		true,
 	)
 	if err != nil {
-		cancel()
+		e.stopSupportingServices()
 		return fmt.Errorf("load configuration: %w", err)
 	}
+	e.services.Add(1)
 	go func() {
+		defer e.services.Done()
 		_ = cfg.Serve(ctx)
 	}()
 
 	waiter, err := cfg.Modify(func(current *config.Configuration) {
 		current.GUI.Enabled = false
+		// QUIC relies on STUN, whose current upstream shutdown path races under
+		// the Go race detector. TCP plus discovery and relays is sufficient for
+		// the foreground-first MVP and avoids starting that subsystem.
+		current.Options.RawListenAddresses = []string{"tcp://:22000"}
+		current.Options.NATEnabled = false
 		current.Options.AutoUpgradeIntervalH = 0
 		current.Options.CREnabled = false
 		current.Options.URAccepted = -1
 	})
 	if err != nil {
-		cancel()
+		e.stopSupportingServices()
 		return fmt.Errorf("configure mobile defaults: %w", err)
 	}
 	waiter.Wait()
 	if err := cfg.Save(); err != nil {
-		cancel()
+		e.stopSupportingServices()
 		return fmt.Errorf("save mobile configuration: %w", err)
 	}
 
 	const deleteRetention = 180 * 24 * time.Hour
 	database, err := syncthing.OpenDatabase(locations.Get(locations.Database), deleteRetention)
 	if err != nil {
-		cancel()
+		e.stopSupportingServices()
 		return fmt.Errorf("open database: %w", err)
 	}
 
@@ -130,14 +140,14 @@ func (e *syncthingEngine) Start() error {
 	})
 	if err != nil {
 		database.Close()
-		cancel()
+		e.stopSupportingServices()
 		return fmt.Errorf("create syncthing application: %w", err)
 	}
 	e.app = app
 	e.config = cfg
 
 	if err := app.Start(); err != nil {
-		cancel()
+		e.stopSupportingServices()
 		return fmt.Errorf("start syncthing application: %w", err)
 	}
 	return nil
@@ -145,18 +155,20 @@ func (e *syncthingEngine) Start() error {
 
 func (e *syncthingEngine) Stop() error {
 	if e.app == nil {
-		if e.cancel != nil {
-			e.cancel()
-		}
+		e.stopSupportingServices()
 		return nil
 	}
 
 	e.app.Stop(svcutil.ExitSuccess)
+	e.stopSupportingServices()
+	return e.app.Error()
+}
+
+func (e *syncthingEngine) stopSupportingServices() {
 	if e.cancel != nil {
 		e.cancel()
 	}
-	e.app.Wait()
-	return e.app.Error()
+	e.services.Wait()
 }
 
 func (e *syncthingEngine) DeviceID() string {
