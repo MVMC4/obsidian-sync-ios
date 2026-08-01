@@ -1,0 +1,42 @@
+name: ObsidianSync
+
+options:
+  bundleIdPrefix: com.mvmc4
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    DEVELOPMENT_TEAM: ""
+
+targets:
+  ObsidianSync:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mvmc4.obsidian-sync-ios
+        PRODUCT_NAME: Vault Sync
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Support/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+    scheme:
+      testTargets:
+        - ObsidianSyncTests
+
+  ObsidianSyncTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    dependencies:
+      - target: ObsidianSync
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mvmc4.obsidian-sync-ios.tests
+        GENERATE_INFOPLIST_FILE: YES

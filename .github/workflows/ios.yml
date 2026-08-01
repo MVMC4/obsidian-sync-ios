@@ -1,0 +1,34 @@
+name: iOS checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Generate and compile iOS app
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: ./scripts/generate-xcode-project.sh
+
+      - name: Compile for iOS Simulator
+        run: >-
+          xcodebuild
+          -project app/ObsidianSync.xcodeproj
+          -scheme ObsidianSync
+          -configuration Debug
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO
+          build
