@@ -32,6 +32,7 @@ type syncthingEngine struct {
 
 	app    *syncthing.App
 	cancel context.CancelFunc
+	config config.Wrapper
 }
 
 func newSyncthingEngine(statePath string) (*syncthingEngine, error) {
@@ -133,6 +134,7 @@ func (e *syncthingEngine) Start() error {
 		return fmt.Errorf("create syncthing application: %w", err)
 	}
 	e.app = app
+	e.config = cfg
 
 	if err := app.Start(); err != nil {
 		cancel()

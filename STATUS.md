@@ -10,6 +10,8 @@ Phase 0 — feasibility gates.
 - Repository licensed under MIT and prepared for public development.
 - Platform-neutral Go lifecycle facade implemented.
 - Go lifecycle tests and vet checks passing on Windows with Go 1.25.12.
+- Released Syncthing `v2.1.1` engine embedded with persistent identity.
+- Peer, vault-folder, and explicit scan configuration implemented and tested.
 
 ## Next concrete task
 

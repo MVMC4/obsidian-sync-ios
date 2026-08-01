@@ -51,3 +51,12 @@ not exist.
 - Remote `go test -tags noassets -race -coverprofile=coverage.out ./...`: passed
 - Remote statement coverage: 74.3%
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30691765411
+
+## 2026-08-01 — Peer and vault configuration tests
+
+- Full `go test -tags noassets -cover ./...`: passed
+- `go vet -tags noassets ./...`: passed
+- Statement coverage: 75.8%
+- Covered: address parsing defaults and errors, peer configuration, vault-folder
+  configuration, manual watcher policy, explicit scan, and runtime persistence
+- Remote race-enabled CI: pending for the corresponding commit

@@ -57,3 +57,13 @@ will remain attached to their corresponding workflow runs.
 - Verified from a clean Ubuntu runner: formatting, vet, real engine lifecycle,
   race detector, and coverage
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30691765411
+
+## 2026-08-01 — Peer and vault configuration slice
+
+- Host: Windows amd64
+- Go: 1.25.12
+- Result: passed
+- Implemented: validated peer device IDs and address JSON, send-receive vault
+  mapping, mobile-oriented manual scan settings, and explicit scan requests
+- Verified: real engine start, runtime configuration commit, vault scan, and
+  orderly shutdown

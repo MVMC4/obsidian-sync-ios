@@ -21,6 +21,7 @@ var (
 	errBusy          = errors.New("engine lifecycle operation already in progress")
 	errNoEngine      = errors.New("syncthing engine is not configured")
 	errTerminalState = errors.New("client cannot restart after stopping or failing")
+	errNotRunning    = errors.New("syncthing engine is not running")
 )
 
 // engine is deliberately smaller than Syncthing's application type. The
@@ -29,6 +30,12 @@ type engine interface {
 	Start() error
 	Stop() error
 	DeviceID() string
+}
+
+type configurationEngine interface {
+	ConfigurePeer(deviceID, name, addressesJSON string) error
+	ConfigureFolder(folderID, folderPath, label, peerDeviceID string) error
+	Scan(folderID string) error
 }
 
 // Client serializes lifecycle operations and projects engine state into values
@@ -163,6 +170,48 @@ func (c *Client) LastError() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.lastError
+}
+
+// ConfigurePeer adds or updates a Syncthing peer. addressesJSON is a JSON array
+// of Syncthing address strings; an empty string selects dynamic discovery.
+func (c *Client) ConfigurePeer(deviceID, name, addressesJSON string) error {
+	eng, err := c.runningConfigurationEngine()
+	if err != nil {
+		return err
+	}
+	return eng.ConfigurePeer(deviceID, name, addressesJSON)
+}
+
+// ConfigureFolder maps a selected vault path to a Syncthing folder and shares
+// it with one configured peer.
+func (c *Client) ConfigureFolder(folderID, folderPath, label, peerDeviceID string) error {
+	eng, err := c.runningConfigurationEngine()
+	if err != nil {
+		return err
+	}
+	return eng.ConfigureFolder(folderID, folderPath, label, peerDeviceID)
+}
+
+// Scan requests an immediate scan of a configured vault folder.
+func (c *Client) Scan(folderID string) error {
+	eng, err := c.runningConfigurationEngine()
+	if err != nil {
+		return err
+	}
+	return eng.Scan(folderID)
+}
+
+func (c *Client) runningConfigurationEngine() (configurationEngine, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.state != StateRunning {
+		return nil, errNotRunning
+	}
+	eng, ok := c.engine.(configurationEngine)
+	if !ok {
+		return nil, errors.New("engine does not support configuration")
+	}
+	return eng, nil
 }
 
 // StatusJSON returns a versioned snapshot for the Swift presentation layer.

@@ -3,8 +3,11 @@ package mobilecore
 import (
 	"encoding/json"
 	"errors"
+	"slices"
 	"sync"
 	"testing"
+
+	"github.com/syncthing/syncthing/lib/protocol"
 )
 
 type fakeEngine struct {
@@ -165,5 +168,79 @@ func TestRealSyncthingEngineStartsAndStops(t *testing.T) {
 	}
 	if got := client.State(); got != StateStopped {
 		t.Fatalf("stopped state = %q, want %q", got, StateStopped)
+	}
+}
+
+func TestRealEngineConfiguresPeerFolderAndScan(t *testing.T) {
+	client, err := NewClient(t.TempDir())
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+	peer, err := NewClient(t.TempDir())
+	if err != nil {
+		t.Fatalf("peer NewClient() error = %v", err)
+	}
+	vaultPath := t.TempDir()
+
+	if err := client.Start(); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	t.Cleanup(func() {
+		if client.State() == StateRunning {
+			_ = client.Stop()
+		}
+	})
+
+	if err := client.ConfigurePeer(peer.DeviceID(), "Desktop", `["dynamic"]`); err != nil {
+		t.Fatalf("ConfigurePeer() error = %v", err)
+	}
+	if err := client.ConfigureFolder("obsidian-vault", vaultPath, "Notes", peer.DeviceID()); err != nil {
+		t.Fatalf("ConfigureFolder() error = %v", err)
+	}
+	if err := client.Scan("obsidian-vault"); err != nil {
+		t.Fatalf("Scan() error = %v", err)
+	}
+
+	eng := client.engine.(*syncthingEngine)
+	peerID, _ := protocol.DeviceIDFromString(peer.DeviceID())
+	if configuredPeer, ok := eng.config.Device(peerID); !ok || configuredPeer.Name != "Desktop" {
+		t.Fatalf("configured peer = %#v, present = %v", configuredPeer, ok)
+	}
+	folder, ok := eng.config.Folder("obsidian-vault")
+	if !ok {
+		t.Fatal("configured folder is missing")
+	}
+	if folder.Path != vaultPath {
+		t.Fatalf("folder path = %q, want %q", folder.Path, vaultPath)
+	}
+	if folder.FSWatcherEnabled {
+		t.Fatal("folder watcher is enabled, want manual foreground scans")
+	}
+}
+
+func TestParseAddresses(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    []string
+		wantErr bool
+	}{
+		{name: "empty uses discovery", want: []string{"dynamic"}},
+		{name: "empty array uses discovery", input: `[]`, want: []string{"dynamic"}},
+		{name: "explicit", input: `["tcp://192.0.2.1:22000"]`, want: []string{"tcp://192.0.2.1:22000"}},
+		{name: "invalid JSON", input: `[`, wantErr: true},
+		{name: "blank address", input: `[""]`, wantErr: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseAddresses(test.input)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("parseAddresses() error = %v, wantErr = %v", err, test.wantErr)
+			}
+			if !test.wantErr && !slices.Equal(got, test.want) {
+				t.Fatalf("parseAddresses() = %v, want %v", got, test.want)
+			}
+		})
 	}
 }
