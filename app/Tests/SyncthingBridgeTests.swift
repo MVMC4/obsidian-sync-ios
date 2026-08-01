@@ -6,7 +6,7 @@ final class SyncthingBridgeTests: XCTestCase {
     func testEmbeddedEngineCreatesIdentityStartsAndStops() throws {
         let bridge = SyncthingBridge()
 
-        bridge.prepare()
+        try bridge.prepare()
 
         XCTAssertNil(bridge.lastError)
         XCTAssertFalse(bridge.deviceID?.isEmpty ?? true)

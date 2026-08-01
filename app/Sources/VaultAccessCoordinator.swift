@@ -18,7 +18,17 @@ enum VaultAccessError: LocalizedError {
     }
 }
 
-final class VaultAccessSession {
+protocol VaultAccessSessionProtocol: AnyObject {
+    var url: URL { get }
+    func close()
+}
+
+@MainActor
+protocol VaultAccessProviding {
+    func openSession() throws -> any VaultAccessSessionProtocol
+}
+
+final class VaultAccessSession: VaultAccessSessionProtocol {
     let url: URL
     private var isOpen = true
 
@@ -38,7 +48,7 @@ final class VaultAccessSession {
 }
 
 @MainActor
-final class VaultAccessCoordinator: ObservableObject {
+final class VaultAccessCoordinator: ObservableObject, VaultAccessProviding {
     @Published private(set) var selectedVaultName: String?
     @Published private(set) var lastError: String?
 
@@ -73,7 +83,7 @@ final class VaultAccessCoordinator: ObservableObject {
         }
     }
 
-    func openSession() throws -> VaultAccessSession {
+    func openSession() throws -> any VaultAccessSessionProtocol {
         guard let record = try store.load() else {
             throw VaultAccessError.noSelection
         }

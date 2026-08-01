@@ -23,7 +23,7 @@ struct VaultAccessView: View {
             .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("Vault Access Lab")
             .task {
-                engine.prepare()
+                try? engine.prepare()
             }
             .sheet(isPresented: $isPickingFolder) {
                 FolderPicker(
