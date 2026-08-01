@@ -3,12 +3,37 @@ package mobilecore
 import (
 	"encoding/json"
 	"errors"
+	"os"
 	"slices"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/syncthing/syncthing/lib/protocol"
 )
+
+func temporarySyncedFolder(t *testing.T) string {
+	t.Helper()
+	path, err := os.MkdirTemp("", "obsidian-sync-vault-test-")
+	if err != nil {
+		t.Fatalf("create temporary synced folder: %v", err)
+	}
+	t.Cleanup(func() {
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			err := os.RemoveAll(path)
+			if err == nil {
+				return
+			}
+			if time.Now().After(deadline) {
+				t.Errorf("remove temporary synced folder after engine stop: %v", err)
+				return
+			}
+			time.Sleep(25 * time.Millisecond)
+		}
+	})
+	return path
+}
 
 type fakeEngine struct {
 	mu         sync.Mutex
@@ -188,7 +213,7 @@ func TestRealEngineConfiguresPeerFolderAndScan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("peer NewClient() error = %v", err)
 	}
-	vaultPath := t.TempDir()
+	vaultPath := temporarySyncedFolder(t)
 
 	if err := client.Start(); err != nil {
 		t.Fatalf("Start() error = %v", err)
