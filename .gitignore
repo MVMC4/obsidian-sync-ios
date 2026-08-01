@@ -1,0 +1,27 @@
+# Xcode
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.ipa
+*.dSYM
+
+# Go and generated mobile framework
+core/build/
+*.xcframework/
+*.framework/
+
+# Local configuration and identities
+local.xcconfig
+*.p12
+*.mobileprovision
+cert.pem
+key.pem
+config.xml
+index-v*.db/
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
