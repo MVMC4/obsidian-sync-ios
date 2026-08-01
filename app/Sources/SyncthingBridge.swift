@@ -138,7 +138,15 @@ final class SyncthingBridge: ObservableObject, SyncEngineControlling {
         guard let client else {
             throw SyncthingBridgeError.clientNotPrepared
         }
-        let json = try client.folderStatusJSON(folderID, peerDeviceID: peerDeviceID)
+        var statusError: NSError?
+        let json = client.folderStatusJSON(
+            folderID,
+            peerDeviceID: peerDeviceID,
+            error: &statusError
+        )
+        if let statusError {
+            throw statusError
+        }
         return try JSONDecoder().decode(FolderSyncStatus.self, from: Data(json.utf8))
     }
 
