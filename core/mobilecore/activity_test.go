@@ -117,7 +117,7 @@ func TestRecorderBoundsToMaximumItems(t *testing.T) {
 	now := time.Now()
 	for i := 0; i < maximumRecentActivityItems+10; i++ {
 		r.record(eventAt(now.Add(time.Duration(i)*time.Second), events.LocalChangeDetected, map[string]interface{}{
-			"folder": "vault", "path": "n" + string(rune('a'+i%26)) + ".md",
+			"folder": "vault", "path": "n" + string(rune('a'+i)) + ".md",
 			"action": "update", "type": "file",
 		}))
 	}
