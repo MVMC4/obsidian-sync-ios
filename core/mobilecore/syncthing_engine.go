@@ -23,12 +23,33 @@ const embeddedSyncthingVersion = "v2.1.1"
 
 var configureBuildMetadataOnce sync.Once
 
+type syncthingEngineOptions struct {
+	ListenAddresses    []string
+	NATEnabled         bool
+	GlobalAnnEnabled   bool
+	LocalAnnEnabled    bool
+	RelaysEnabled      bool
+	ReconnectIntervalS int
+}
+
+func defaultSyncthingEngineOptions() syncthingEngineOptions {
+	return syncthingEngineOptions{
+		ListenAddresses:    []string{"tcp://:22000"},
+		NATEnabled:         false,
+		GlobalAnnEnabled:   true,
+		LocalAnnEnabled:    true,
+		RelaysEnabled:      true,
+		ReconnectIntervalS: 5,
+	}
+}
+
 type syncthingEngine struct {
 	statePath string
 	certPath  string
 	keyPath   string
 	cert      tls.Certificate
 	deviceID  string
+	options   syncthingEngineOptions
 
 	app      *syncthing.App
 	cancel   context.CancelFunc
@@ -37,6 +58,13 @@ type syncthingEngine struct {
 }
 
 func newSyncthingEngine(statePath string) (*syncthingEngine, error) {
+	return newSyncthingEngineWithOptions(statePath, defaultSyncthingEngineOptions())
+}
+
+func newSyncthingEngineWithOptions(
+	statePath string,
+	options syncthingEngineOptions,
+) (*syncthingEngine, error) {
 	if strings.TrimSpace(statePath) == "" {
 		return nil, errorsForPath("state path is empty")
 	}
@@ -68,6 +96,7 @@ func newSyncthingEngine(statePath string) (*syncthingEngine, error) {
 		keyPath:   keyPath,
 		cert:      cert,
 		deviceID:  protocol.NewDeviceID(cert.Certificate[0]).String(),
+		options:   options,
 	}, nil
 }
 
@@ -111,8 +140,12 @@ func (e *syncthingEngine) Start() error {
 		// QUIC relies on STUN, whose current upstream shutdown path races under
 		// the Go race detector. TCP plus discovery and relays is sufficient for
 		// the foreground-first MVP and avoids starting that subsystem.
-		current.Options.RawListenAddresses = []string{"tcp://:22000"}
-		current.Options.NATEnabled = false
+		current.Options.RawListenAddresses = append([]string(nil), e.options.ListenAddresses...)
+		current.Options.NATEnabled = e.options.NATEnabled
+		current.Options.GlobalAnnEnabled = e.options.GlobalAnnEnabled
+		current.Options.LocalAnnEnabled = e.options.LocalAnnEnabled
+		current.Options.RelaysEnabled = e.options.RelaysEnabled
+		current.Options.ReconnectIntervalS = e.options.ReconnectIntervalS
 		current.Options.AutoUpgradeIntervalH = 0
 		current.Options.CREnabled = false
 		current.Options.URAccepted = -1
