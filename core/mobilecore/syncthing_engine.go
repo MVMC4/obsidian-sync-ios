@@ -54,6 +54,7 @@ type syncthingEngine struct {
 	app      *syncthing.App
 	cancel   context.CancelFunc
 	config   config.Wrapper
+	activity *activityRecorder
 	services sync.WaitGroup
 }
 
@@ -112,10 +113,30 @@ func (e *syncthingEngine) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
 	eventLogger := events.NewLogger()
+	e.activity = newActivityRecorder()
 	e.services.Add(1)
 	go func() {
 		defer e.services.Done()
 		_ = eventLogger.Serve(ctx)
+	}()
+	activitySubscription := eventLogger.Subscribe(
+		events.LocalChangeDetected | events.ItemFinished,
+	)
+	e.services.Add(1)
+	go func() {
+		defer e.services.Done()
+		defer activitySubscription.Unsubscribe()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case event, ok := <-activitySubscription.C():
+				if !ok {
+					return
+				}
+				e.activity.record(event)
+			}
+		}
 	}()
 
 	cfg, err := syncthing.LoadConfigAtStartup(

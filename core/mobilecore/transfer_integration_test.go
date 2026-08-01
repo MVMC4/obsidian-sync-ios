@@ -2,12 +2,14 @@ package mobilecore
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -28,6 +30,9 @@ func (e *delayedScanEngine) ConfigureFolder(string, string, string, string) erro
 func (e *delayedScanEngine) FolderStatusJSON(string, string) (string, error) {
 	return `{}`, nil
 }
+func (e *delayedScanEngine) RecentActivityJSON(string) (string, error) {
+	return `{"schemaVersion":1,"folderID":"integration-vault","items":[]}`, nil
+}
 func (e *delayedScanEngine) Scan(string) error {
 	e.attempts++
 	if e.attempts < e.readyAfter {
@@ -43,7 +48,6 @@ func TestScanWhenFolderReadyRetriesTransientFailure(t *testing.T) {
 		t.Fatalf("start client: %v", err)
 	}
 	defer func() { _ = client.Stop() }()
-
 	if err := scanWhenFolderReady(client, integrationFolderID, time.Second); err != nil {
 		t.Fatalf("scanWhenFolderReady() error = %v", err)
 	}
@@ -59,14 +63,12 @@ func TestBidirectionalTransferBetweenIndependentProcesses(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping real protocol transfer in short mode")
 	}
-
 	primaryState := t.TempDir()
 	peerState := t.TempDir()
 	primaryVault := t.TempDir()
 	peerVault := t.TempDir()
 	primaryListen := reserveTCPAddress(t)
 	peerListen := reserveTCPAddress(t)
-
 	primary, err := newIntegrationClient(primaryState, primaryListen)
 	if err != nil {
 		t.Fatalf("create primary client: %v", err)
@@ -75,7 +77,6 @@ func TestBidirectionalTransferBetweenIndependentProcesses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create peer identity: %v", err)
 	}
-
 	if err := primary.Start(); err != nil {
 		t.Fatalf("start primary: %v", err)
 	}
@@ -86,7 +87,6 @@ func TestBidirectionalTransferBetweenIndependentProcesses(t *testing.T) {
 			}
 		}
 	}()
-
 	if err := primary.ConfigurePeer(
 		peerIdentity.DeviceID(),
 		"integration peer",
@@ -102,7 +102,6 @@ func TestBidirectionalTransferBetweenIndependentProcesses(t *testing.T) {
 	); err != nil {
 		t.Fatalf("configure primary folder: %v", err)
 	}
-
 	readyFile := filepath.Join(t.TempDir(), "peer-ready")
 	stopFile := filepath.Join(filepath.Dir(readyFile), "peer-stop")
 	helper := startPeerHelper(t, peerHelperEnvironment{
@@ -115,9 +114,7 @@ func TestBidirectionalTransferBetweenIndependentProcesses(t *testing.T) {
 		StopFile:       stopFile,
 	})
 	defer helper.stop(t, stopFile)
-
 	waitForPath(t, readyFile, helper, 20*time.Second)
-
 	const outboundContent = "created by the mobile-core integration node\n"
 	outboundPath := filepath.Join(primaryVault, "from-ipad.md")
 	if err := os.WriteFile(outboundPath, []byte(outboundContent), 0o600); err != nil {
@@ -126,7 +123,6 @@ func TestBidirectionalTransferBetweenIndependentProcesses(t *testing.T) {
 	if err := scanWhenFolderReady(primary, integrationFolderID, 10*time.Second); err != nil {
 		t.Fatalf("scan outbound note: %v", err)
 	}
-
 	waitForContent(
 		t,
 		filepath.Join(peerVault, "from-ipad.md"),
@@ -135,7 +131,6 @@ func TestBidirectionalTransferBetweenIndependentProcesses(t *testing.T) {
 		nil,
 		45*time.Second,
 	)
-
 	const inboundContent = "created by the independent desktop peer\n"
 	waitForContent(
 		t,
@@ -145,13 +140,45 @@ func TestBidirectionalTransferBetweenIndependentProcesses(t *testing.T) {
 		func() { _ = primary.Scan(integrationFolderID) },
 		45*time.Second,
 	)
+	waitForActivity(t, primary, integrationFolderID, primaryVault, 20*time.Second)
+}
+
+func waitForActivity(t *testing.T, client *Client, folderID, vaultPath string, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	var last string
+	for time.Now().Before(deadline) {
+		payload, err := client.RecentActivityJSON(folderID)
+		if err == nil {
+			last = payload
+			if strings.Contains(payload, vaultPath) {
+				t.Fatalf("recent activity leaked absolute vault path: %s", payload)
+			}
+			var snap activitySnapshot
+			if json.Unmarshal([]byte(payload), &snap) == nil {
+				hasOut, hasIn := false, false
+				for _, item := range snap.Items {
+					if item.Path == "from-ipad.md" {
+						hasOut = true
+					}
+					if item.Path == "from-desktop.md" && item.Result == "completed" {
+						hasIn = true
+					}
+				}
+				if hasOut && hasIn {
+					return
+				}
+			}
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	t.Errorf("recent activity did not surface both relative paths in time; last=%s", last)
 }
 
 func TestSyncthingPeerHelperProcess(t *testing.T) {
 	if os.Getenv("OBS_SYNC_HELPER") != "1" {
 		return
 	}
-
 	client, err := newIntegrationClient(
 		os.Getenv("OBS_SYNC_STATE_PATH"),
 		os.Getenv("OBS_SYNC_LISTEN_ADDRESS"),
@@ -167,7 +194,6 @@ func TestSyncthingPeerHelperProcess(t *testing.T) {
 			_ = client.Stop()
 		}
 	}()
-
 	remoteDeviceID := os.Getenv("OBS_SYNC_REMOTE_DEVICE_ID")
 	remoteAddress := os.Getenv("OBS_SYNC_REMOTE_ADDRESS")
 	vaultPath := os.Getenv("OBS_SYNC_VAULT_PATH")
@@ -192,7 +218,6 @@ func TestSyncthingPeerHelperProcess(t *testing.T) {
 	if err := os.WriteFile(os.Getenv("OBS_SYNC_READY_FILE"), []byte("ready"), 0o600); err != nil {
 		t.Fatalf("signal helper readiness: %v", err)
 	}
-
 	replyCreated := false
 	ticker := time.NewTicker(150 * time.Millisecond)
 	defer ticker.Stop()
@@ -201,7 +226,6 @@ func TestSyncthingPeerHelperProcess(t *testing.T) {
 			return
 		}
 		_ = client.Scan(integrationFolderID)
-
 		if replyCreated {
 			continue
 		}

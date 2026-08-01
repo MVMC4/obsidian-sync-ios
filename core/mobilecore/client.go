@@ -40,6 +40,7 @@ type configurationEngine interface {
 	ConfigureFolder(folderID, folderPath, label, peerDeviceID string) error
 	Scan(folderID string) error
 	FolderStatusJSON(folderID, peerDeviceID string) (string, error)
+	RecentActivityJSON(folderID string) (string, error)
 }
 
 // Client serializes lifecycle operations and projects engine state into values
@@ -227,6 +228,16 @@ func (c *Client) FolderStatusJSON(folderID, peerDeviceID string) (string, error)
 		return "", err
 	}
 	return eng.FolderStatusJSON(folderID, peerDeviceID)
+}
+
+// RecentActivityJSON returns a bounded, newest-first list of relative paths
+// observed during the current foreground engine session.
+func (c *Client) RecentActivityJSON(folderID string) (string, error) {
+	eng, err := c.runningConfigurationEngine()
+	if err != nil {
+		return "", err
+	}
+	return eng.RecentActivityJSON(folderID)
 }
 
 func (c *Client) runningConfigurationEngine() (configurationEngine, error) {
