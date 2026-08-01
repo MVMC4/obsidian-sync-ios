@@ -2,7 +2,7 @@
 
 ## Active phase
 
-Phase 0 — feasibility gates.
+Software implementation complete; physical-iPad feasibility gate pending.
 
 ## Completed
 
@@ -35,10 +35,12 @@ Phase 0 — feasibility gates.
 - Pairing now displays this device's canonical ID as a QR code and can scan the
   plain device-ID QR produced by Syncthing. The pinned Go parser validates check
   digits before settings are saved; camera denial retains manual entry.
+- The final activity-list identity correction is verified by Core checks run
+  `30710848626` and iOS checks run `30710848621` at revision `69d9475`.
 
 ## Next concrete task
 
-Build a tiny SwiftUI device spike on macOS that:
+Sign and run the completed SwiftUI device spike on a physical iPad so it:
 
 1. lets the user select `On My iPad/Obsidian/<vault>`;
 2. persists and resolves the returned bookmark;

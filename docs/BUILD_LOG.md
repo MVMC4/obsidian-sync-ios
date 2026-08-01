@@ -264,3 +264,19 @@ will remain attached to their corresponding workflow runs.
 - Core run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30697607940
 - iOS result: passed in 6 minutes 37 seconds
 - iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30697607944
+
+## 2026-08-01 — Completed interface and activity identity correction
+
+- Revision: `69d9475`
+- Local host: Windows amd64 with Go 1.25.12
+- Local result: `gofmt` clean, `go vet -tags noassets ./...` passed, and
+  `go test -tags noassets -count=1 -coverprofile coverage.out ./...` passed at
+  79.6% statement coverage
+- Local race detector: unavailable because CGO is disabled; retained in the
+  Ubuntu workflow
+- Ubuntu Core checks: passed with the race detector
+- Core run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30710848626
+- macOS iOS checks: passed; the XCFramework and Xcode project were generated,
+  the linked app compiled, and the native suite ran on an iPad Simulator
+- iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30710848621
+- Physical-device build and signing: not run; this remains the next gate

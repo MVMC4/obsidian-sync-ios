@@ -185,3 +185,20 @@ not exist.
 - iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30697607944
 - Physical camera authorization, live capture, desktop scanning of the iPad QR,
   and iPad scanning of the desktop QR: not run; added to the physical checklist
+
+## 2026-08-01 — Completed interface regression
+
+- Revision: `69d9475`
+- Corrected `SyncActivityItem` to expose its existing content-derived stable
+  identity through Swift's `Identifiable` contract
+- Added a model assertion that the SwiftUI identity remains equal to the
+  deduplication identity
+- Local `go vet -tags noassets ./...`: passed
+- Local `go test -tags noassets -count=1 -coverprofile coverage.out ./...`:
+  passed with 79.6% statement coverage
+- Ubuntu Core checks, including `-race`: passed
+- Core run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30710848626
+- Full linked app build and native test suite on an iPad Simulator: passed
+- iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30710848621
+- Physical iPad folder access, camera, LAN transfer, Obsidian visibility, and
+  signing: not run and not represented by the Simulator result
