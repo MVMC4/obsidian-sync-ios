@@ -11,6 +11,7 @@ private final class FakeSyncEngine: SyncEngineControlling {
     var activitySnapshots: [SyncActivitySnapshot] = []
     var calls: [String] = []
     var configureError: Error?
+    var scanErrors: [Error] = []
 
     func prepare() throws { calls.append("prepare") }
     func start() throws { calls.append("start"); state = "running" }
@@ -21,7 +22,10 @@ private final class FakeSyncEngine: SyncEngineControlling {
     func configureFolder(_ profile: SyncProfile, vaultPath: String) throws {
         calls.append("configureFolder:\(vaultPath)")
     }
-    func scan(folderID: String) throws { calls.append("scan") }
+    func scan(folderID: String) throws {
+        calls.append("scan")
+        if !scanErrors.isEmpty { throw scanErrors.removeFirst() }
+    }
     func folderStatus(folderID: String, peerDeviceID: String) throws -> FolderSyncStatus {
         calls.append("status")
         return statuses.isEmpty ? Self.status(connected: false) : statuses.removeFirst()
@@ -139,6 +143,37 @@ final class SyncSessionControllerTests: XCTestCase {
     }
 
     @MainActor
+    func testScanRetriesWhileNewFolderBecomesReady() async {
+        struct FolderStarting: LocalizedError {
+            var errorDescription: String? { "Folder is not running" }
+        }
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let engine = FakeSyncEngine()
+        engine.scanErrors = [FolderStarting(), FolderStarting()]
+        engine.statuses = [
+            FakeSyncEngine.status(connected: true, upToDate: true),
+            FakeSyncEngine.status(connected: true, upToDate: true),
+        ]
+        let controller = SyncSessionController(
+            engine: engine, vaultAccess: FakeVaultAccess(),
+            policy: SyncSessionPolicy(
+                maximumPolls: 2,
+                pollIntervalNanoseconds: 0,
+                requiredStableSamples: 2,
+                maximumScanAttempts: 3,
+                scanRetryIntervalNanoseconds: 0
+            ),
+            conflictScanner: FakeConflictScanner(), activityDirectory: dir,
+            sleeper: { _ in }
+        )
+
+        await controller.run(profile: profile)
+
+        XCTAssertEqual(controller.phase, .complete)
+        XCTAssertEqual(engine.calls.filter { $0 == "scan" }.count, 3)
+    }
+
+    @MainActor
     func testTimeoutDoesNotClaimCompletion() async {
         let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
         let engine = FakeSyncEngine()
@@ -151,7 +186,7 @@ final class SyncSessionControllerTests: XCTestCase {
         )
         await controller.run(profile: profile)
         XCTAssertEqual(controller.phase, .failed)
-        XCTAssertEqual(controller.lastError, SyncSessionError.timedOut.localizedDescription)
+        XCTAssertEqual(controller.lastError, SyncSessionError.peerUnavailable.localizedDescription)
         XCTAssertEqual(vault.session.closeCalls, 1)
     }
 

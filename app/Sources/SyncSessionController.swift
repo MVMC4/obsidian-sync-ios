@@ -16,11 +16,14 @@ enum SyncSessionPhase: String, Equatable {
 }
 
 enum SyncSessionError: LocalizedError {
-    case alreadyRunning, timedOut
+    case alreadyRunning, peerUnavailable, timedOut
     var errorDescription: String? {
         switch self {
         case .alreadyRunning: return "A sync session is already running."
-        case .timedOut: return "The peer did not reach a verified up-to-date state before the session timed out."
+        case .peerUnavailable:
+            return "The computer could not be reached. Confirm Syncthing is running, this iPad is added as a device, and the vault folder is shared with it."
+        case .timedOut:
+            return "The computer connected, but the folder did not become up to date. Confirm the Syncthing Folder ID matches exactly on both devices."
         }
     }
 }
@@ -29,6 +32,8 @@ struct SyncSessionPolicy {
     var maximumPolls = 180
     var pollIntervalNanoseconds: UInt64 = 1_000_000_000
     var requiredStableSamples = 2
+    var maximumScanAttempts = 12
+    var scanRetryIntervalNanoseconds: UInt64 = 250_000_000
 }
 
 @MainActor
@@ -101,7 +106,7 @@ final class SyncSessionController: ObservableObject {
             try engine.configurePeer(validatedProfile)
             try engine.configureFolder(validatedProfile, vaultPath: accessSession!.url.path)
             transition(to: .scanning)
-            try engine.scan(folderID: validatedProfile.folderID)
+            try await scanWhenFolderIsReady(folderID: validatedProfile.folderID)
             var stableSamples = 0
             for poll in 0..<policy.maximumPolls {
                 try Task.checkCancellation()
@@ -132,7 +137,9 @@ final class SyncSessionController: ObservableObject {
                     try await sleeper(policy.pollIntervalNanoseconds)
                 }
             }
-            throw SyncSessionError.timedOut
+            throw status?.peerConnected == true
+                ? SyncSessionError.timedOut
+                : SyncSessionError.peerUnavailable
         } catch is CancellationError {
             cleanup(engineStarted: &engineStarted, accessSession: &accessSession)
             transition(to: .cancelled, outcome: .cancelled)
@@ -151,6 +158,20 @@ final class SyncSessionController: ObservableObject {
     private func refreshActivity(folderID: String) {
         guard let snapshot = try? engine.recentActivity(folderID: folderID) else { return }
         activity = SyncActivityStore.merge(session: snapshot.items, persisted: activity)
+    }
+
+    private func scanWhenFolderIsReady(folderID: String) async throws {
+        let attempts = max(1, policy.maximumScanAttempts)
+        for attempt in 0..<attempts {
+            try Task.checkCancellation()
+            do {
+                try engine.scan(folderID: folderID)
+                return
+            } catch {
+                guard attempt + 1 < attempts else { throw error }
+                try await sleeper(policy.scanRetryIntervalNanoseconds)
+            }
+        }
     }
 
     private func persistActivity() {

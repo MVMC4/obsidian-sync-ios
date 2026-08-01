@@ -63,7 +63,7 @@ struct SettingsView: View {
             } message: {
                 Text("You will need to choose the vault folder again before the next sync. Your notes are not deleted.")
             }
-            .alert("Remove pairing profile?", isPresented: $confirmForgetPairing) {
+            .alert("Remove computer settings?", isPresented: $confirmForgetPairing) {
                 Button("Remove", role: .destructive) { profiles.clear() }
                 Button("Keep", role: .cancel) {}
             } message: {
@@ -110,13 +110,15 @@ struct SettingsView: View {
 
     private var pairingSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionTitle("Computer pairing", icon: "desktopcomputer")
-            Text(profiles.profile?.peerName ?? "Not paired")
+            sectionTitle("Computer settings", icon: "desktopcomputer")
+            Text(profiles.profile?.peerName ?? "Not configured")
                 .font(VaultType.body(.title3, weight: .semibold))
-            Text(profiles.profile.map { "Folder ID: \($0.folderID)" } ?? "Add the computer's device ID and shared folder ID.")
+            Text(profiles.profile.map {
+                "Saved · Folder ID: \($0.folderID) · Run Sync now to verify"
+            } ?? "Add the computer's device ID and shared Folder ID.")
                 .font(.footnote).foregroundStyle(VaultPalette.muted)
             HStack(spacing: 10) {
-                VaultPillButton(title: profiles.profile == nil ? "Pair" : "Edit pairing",
+                VaultPillButton(title: profiles.profile == nil ? "Configure" : "Edit settings",
                                 systemImage: "link", style: .lilac,
                                 disabled: sessionActive, action: onPair)
             }
@@ -187,7 +189,23 @@ struct SettingsView: View {
 
     private var diagnosticsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionTitle("Redacted diagnostics", icon: "doc.badge.gearshape")
+            sectionTitle("Session log & diagnostics", icon: "doc.badge.gearshape")
+            if diagnostics.events.isEmpty {
+                Text("No sync attempt has run yet. Session steps will appear here after you tap Sync now.")
+                    .font(.footnote).foregroundStyle(VaultPalette.muted)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(diagnostics.events.suffix(8).reversed().enumerated()), id: \.offset) { _, event in
+                        diagnosticRow(event)
+                        if event.timestamp != diagnostics.events.suffix(8).first?.timestamp {
+                            Divider().overlay(VaultPalette.hairline)
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .background(RoundedRectangle(cornerRadius: 16).fill(VaultPalette.parchment))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(VaultPalette.hairline, lineWidth: 1))
+            }
             Text("The report includes session phases and sync counts only. Vault names and paths, device IDs, peer labels, folder IDs, addresses, keys, and raw errors are excluded.")
                 .font(.footnote).foregroundStyle(VaultPalette.muted)
             VaultPillButton(title: "Prepare report", systemImage: "square.and.arrow.up",
@@ -207,6 +225,62 @@ struct SettingsView: View {
             }
         }
         .vaultPanel()
+    }
+
+    private func diagnosticRow(_ event: DiagnosticEvent) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: diagnosticIcon(event))
+                .foregroundStyle(event.outcome == .success ? VaultPalette.teal : VaultPalette.muted)
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(readablePhase(event.phase))
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(VaultPalette.ink)
+                if let status = event.status {
+                    Text(status.peerConnected
+                         ? "Computer connected · \(Int(min(status.localCompletionPct, status.remoteCompletionPct)))% complete"
+                         : "Computer not connected yet")
+                        .font(.caption)
+                        .foregroundStyle(VaultPalette.muted)
+                }
+            }
+            Spacer(minLength: 8)
+            Text(event.timestamp, style: .time)
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(VaultPalette.muted)
+        }
+        .padding(.vertical, 10)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func readablePhase(_ rawValue: String) -> String {
+        switch SyncSessionPhase(rawValue: rawValue) {
+        case .idle: return "Idle"
+        case .acquiringVaultAccess: return "Opened vault permission"
+        case .startingEngine: return "Started sync engine"
+        case .configuring: return "Applied computer settings"
+        case .scanning: return "Scanning vault"
+        case .waitingForPeer: return "Waiting for computer"
+        case .synchronizing: return "Synchronizing files"
+        case .verifyingCompletion: return "Verifying both devices"
+        case .stoppingEngine: return "Stopped sync engine"
+        case .complete: return "Verified up to date"
+        case .completeWithConflicts: return "Completed with conflicts"
+        case .failed: return "Sync failed"
+        case .cancelled: return "Sync stopped"
+        case nil: return "Unknown session event"
+        }
+    }
+
+    private func diagnosticIcon(_ event: DiagnosticEvent) -> String {
+        switch event.outcome {
+        case .success: return "checkmark.circle.fill"
+        case .successWithConflicts: return "exclamationmark.triangle.fill"
+        case .cancelled: return "stop.circle.fill"
+        case .timeout, .vaultAccessFailure, .configurationFailure, .engineFailure:
+            return "xmark.octagon.fill"
+        case nil: return "circle.fill"
+        }
     }
 
     private var aboutSection: some View {

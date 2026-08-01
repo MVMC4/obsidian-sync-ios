@@ -13,6 +13,8 @@ struct VaultAccessView: View {
     @State private var isShowingPairing = false
     @State private var isShowingSettings = false
     @State private var actionError: String?
+    @State private var setupNotice: SetupNotice?
+    @State private var pendingSetupNotice: SetupNotice?
 
     @MainActor
     init() {
@@ -35,6 +37,7 @@ struct VaultAccessView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     EditorialHero().vaultReveal("hero")
                     DottedFlow()
+                    setupGuide.vaultReveal("guide")
                     syncHero.vaultReveal("sync")
                     if !session.conflicts.isEmpty { conflictCard.vaultReveal("conflict") }
                     setupRow.vaultReveal("setup")
@@ -59,7 +62,13 @@ struct VaultAccessView: View {
                     .accessibilityHint("Open vault, pairing, diagnostics, and recovery actions")
                 }
             }
-            .task { try? engine.prepare() }
+            .task {
+                do {
+                    try engine.prepare()
+                } catch {
+                    actionError = error.localizedDescription
+                }
+            }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase != .active, session.phase.isActive { session.cancel() }
             }
@@ -69,18 +78,34 @@ struct VaultAccessView: View {
             )) {
                 OnboardingView(onFinish: onboarding.markComplete)
             }
-            .sheet(isPresented: $isPickingFolder) {
+            .sheet(isPresented: $isPickingFolder, onDismiss: {
+                if let pendingSetupNotice {
+                    self.pendingSetupNotice = nil
+                    setupNotice = pendingSetupNotice
+                }
+            }) {
                 FolderPicker(
-                    onSelection: { url in isPickingFolder = false; access.rememberSelection(url) },
+                    onSelection: handleVaultSelection,
                     onCancel: { isPickingFolder = false }
                 )
             }
-            .sheet(isPresented: $isShowingPairing) {
+            .sheet(isPresented: $isShowingPairing, onDismiss: {
+                if let pendingSetupNotice {
+                    self.pendingSetupNotice = nil
+                    setupNotice = pendingSetupNotice
+                }
+            }) {
                 PairingView(
                     existingProfile: profiles.profile,
                     localDeviceID: engine.deviceID,
                     normalizeDeviceID: engine.normalizeDeviceID,
-                    onSave: profiles.save
+                    onSave: { profile in
+                        try profiles.save(profile)
+                        pendingSetupNotice = SetupNotice(
+                            title: "Sync settings saved",
+                            message: "The computer has not been contacted yet. Choose your Obsidian vault if needed, then tap Sync now to verify the connection and folder ID."
+                        )
+                    }
                 )
                 .presentationDetents([.large])
             }
@@ -92,7 +117,87 @@ struct VaultAccessView: View {
                     onPair: { isShowingSettings = false; isShowingPairing = true }
                 )
             }
+            .alert(item: $setupNotice) { notice in
+                Alert(
+                    title: Text(notice.title),
+                    message: Text(notice.message),
+                    dismissButton: .default(Text("Continue"))
+                )
+            }
         }
+    }
+
+    private var setupGuide: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("Setup checklist", systemImage: "list.number")
+                .font(VaultType.body(.headline, weight: .bold))
+                .foregroundStyle(VaultPalette.ink)
+
+            setupStep(
+                number: 1,
+                title: "Choose the Obsidian vault",
+                detail: access.hasSelection
+                    ? "Selected: \(access.selectedVaultName ?? "vault")"
+                    : "In Files choose On My iPad → Obsidian → your vault folder.",
+                complete: access.hasSelection,
+                actionTitle: access.hasSelection ? nil : "Choose vault",
+                action: { isPickingFolder = true }
+            )
+            setupStep(
+                number: 2,
+                title: "Save the computer settings",
+                detail: profiles.profile.map {
+                    "Saved for \($0.peerName), folder \($0.folderID). Connection not tested yet."
+                } ?? "Enter the computer device ID and Syncthing Folder ID.",
+                complete: profiles.profile != nil,
+                actionTitle: profiles.profile == nil ? "Configure" : nil,
+                action: { isShowingPairing = true }
+            )
+            setupStep(
+                number: 3,
+                title: "Run and verify the first sync",
+                detail: firstSyncStepDetail,
+                complete: session.phase == .complete || session.phase == .completeWithConflicts,
+                actionTitle: nil,
+                action: {}
+            )
+        }
+        .vaultPanel()
+    }
+
+    private func setupStep(
+        number: Int,
+        title: String,
+        detail: String,
+        complete: Bool,
+        actionTitle: String?,
+        action: @escaping () -> Void
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                Circle().fill(complete ? VaultPalette.teal : VaultPalette.ink.opacity(0.1))
+                if complete {
+                    Image(systemName: "checkmark").font(.caption.bold()).foregroundStyle(VaultPalette.onInk)
+                } else {
+                    Text("\(number)").font(.caption.bold()).foregroundStyle(VaultPalette.ink)
+                }
+            }
+            .frame(width: 28, height: 28)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(VaultPalette.ink)
+                Text(detail).font(.footnote).foregroundStyle(VaultPalette.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let actionTitle {
+                    Button(actionTitle, action: action)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(VaultPalette.teal)
+                        .frame(minHeight: 32)
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
     }
 
     private var syncHero: some View {
@@ -141,7 +246,7 @@ struct VaultAccessView: View {
                 action: primaryAction
             )
             if !isReadyToSync, !session.phase.isActive {
-                Text("Choose a vault and pair a computer in Settings before syncing.")
+                Text(missingSetupDetail)
                     .font(.footnote).foregroundStyle(VaultPalette.onInkMuted)
             }
             if let error = session.lastError ?? actionError {
@@ -189,10 +294,10 @@ struct VaultAccessView: View {
     }
 
     private var peerCard: some View {
-        setupCard(title: "Computer", value: profiles.profile?.peerName ?? "Not paired",
-                  detail: profiles.profile.map { "Folder \($0.folderID)" } ?? "Pair a device",
+        setupCard(title: "Computer", value: profiles.profile?.peerName ?? "Not configured",
+                  detail: profiles.profile.map { "Settings saved · not verified" } ?? "Add sync settings",
                   icon: "desktopcomputer", tint: VaultPalette.lilac,
-                  actionTitle: profiles.profile == nil ? "Pair" : "Edit") {
+                  actionTitle: profiles.profile == nil ? "Configure" : "Edit") {
             isShowingPairing = true
         }
     }
@@ -286,7 +391,10 @@ struct VaultAccessView: View {
 
     private var primaryStatusTitle: String {
         switch session.phase {
-        case .idle: return "Ready when you are"
+        case .idle:
+            if !access.hasSelection { return "Choose your vault" }
+            if profiles.profile == nil { return "Configure your computer" }
+            return "Ready to test the connection"
         case .acquiringVaultAccess: return "Opening vault"
         case .startingEngine: return "Starting secure sync"
         case .configuring: return "Applying settings"
@@ -304,7 +412,14 @@ struct VaultAccessView: View {
 
     private var primaryStatusDetail: String {
         switch session.phase {
-        case .idle: return "A manual foreground session, verified on both sides."
+        case .idle:
+            if !access.hasSelection {
+                return "Vault Sync needs one-time Files access to the vault used by Obsidian."
+            }
+            if profiles.profile == nil {
+                return "Save the desktop device ID and exact Syncthing Folder ID."
+            }
+            return "Settings are saved, but pairing is not confirmed until Sync now reaches the computer."
         case .complete: return "The engine stopped and vault access was released."
         case .completeWithConflicts: return "Review the preserved conflict copies below."
         case .failed: return "Review recovery guidance in Settings."
@@ -350,6 +465,49 @@ struct VaultAccessView: View {
         catch { actionError = error.localizedDescription }
     }
 
+    private var firstSyncStepDetail: String {
+        switch session.phase {
+        case .complete: return "Verified: both devices reported up to date."
+        case .completeWithConflicts: return "Connected and synced; conflict copies need review."
+        case .failed: return session.lastError ?? "The last attempt failed. Review the message below."
+        case .waitingForPeer: return "Running: waiting for the computer to come online."
+        case .idle where access.hasSelection && profiles.profile != nil:
+            return "Ready. Tap Sync now below and keep this app open."
+        case .idle: return "Complete steps 1 and 2 first."
+        case .cancelled: return "The last attempt was stopped before verification."
+        default: return "Running: \(primaryStatusTitle.lowercased())."
+        }
+    }
+
+    private var missingSetupDetail: String {
+        if engine.deviceID == nil {
+            return "The sync engine could not initialize. Review the error below and relaunch the app."
+        }
+        if !access.hasSelection && profiles.profile == nil {
+            return "Complete steps 1 and 2 above before syncing."
+        }
+        if !access.hasSelection {
+            return "Choose the Obsidian vault folder in step 1 before syncing."
+        }
+        return "Configure the computer and Folder ID in step 2 before syncing."
+    }
+
+    private func handleVaultSelection(_ url: URL) {
+        isPickingFolder = false
+        do {
+            try access.rememberSelection(url)
+            pendingSetupNotice = SetupNotice(
+                title: "Vault access saved",
+                message: "Vault Sync can now open \(url.lastPathComponent). This permission does not open Obsidian; return here and use Sync now after the computer settings are saved."
+            )
+        } catch {
+            pendingSetupNotice = SetupNotice(
+                title: "Vault access was not saved",
+                message: error.localizedDescription
+            )
+        }
+    }
+
     private func relativeTime(_ date: Date) -> String {
         let seconds = Int(Date().timeIntervalSince(date))
         if seconds < 60 { return "just now" }
@@ -357,4 +515,10 @@ struct VaultAccessView: View {
         if seconds < 86400 { return "\(seconds / 3600)h" }
         return "\(seconds / 86400)d"
     }
+}
+
+private struct SetupNotice: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
 }

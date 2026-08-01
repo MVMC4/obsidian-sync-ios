@@ -93,12 +93,14 @@ struct VaultPillButton: View {
                 }
                 Text(title).font(.body.weight(.semibold))
             }
+            // Set the label color directly. Relying on a style inherited by the
+            // Button can be overridden by the presentation's tint on iPadOS.
+            .foregroundStyle(foreground)
             .frame(minHeight: 44)
             .padding(.horizontal, 22)
             .frame(maxWidth: .infinity)
             .background(background, in: Capsule())
             .overlay(Capsule().stroke(border, lineWidth: style == .outline ? 2 : 0))
-            .foregroundStyle(foreground)
             .opacity(disabled ? 0.45 : 1)
         }
         .buttonStyle(PressablePill())

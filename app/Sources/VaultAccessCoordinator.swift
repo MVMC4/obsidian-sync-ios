@@ -63,7 +63,7 @@ final class VaultAccessCoordinator: ObservableObject, VaultAccessProviding {
         selectedVaultName != nil
     }
 
-    func rememberSelection(_ url: URL) {
+    func rememberSelection(_ url: URL) throws {
         do {
             guard url.startAccessingSecurityScopedResource() else {
                 throw VaultAccessError.accessDenied
@@ -80,6 +80,7 @@ final class VaultAccessCoordinator: ObservableObject, VaultAccessProviding {
             lastError = nil
         } catch {
             lastError = error.localizedDescription
+            throw error
         }
     }
 

@@ -33,4 +33,14 @@ final class RecoveryGuidanceTests: XCTestCase {
         ))
         XCTAssertTrue(access.contains { $0.id == .staleVaultAccess })
     }
+
+    func testFailedUnreachablePeerStillShowsOfflineRecovery() {
+        let scenarios = RecoveryGuidance.scenarios(for: RecoveryContext(
+            phase: .failed, peerConnected: false, vaultSelected: true,
+            profileConfigured: true, conflictCount: 0,
+            lastError: SyncSessionError.peerUnavailable.localizedDescription
+        ))
+
+        XCTAssertTrue(scenarios.contains { $0.id == .peerOffline })
+    }
 }

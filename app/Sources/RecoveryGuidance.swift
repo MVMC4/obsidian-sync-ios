@@ -28,11 +28,13 @@ enum RecoveryGuidance {
                 title: "Finish setup first",
                 steps: [
                     "Choose your Obsidian vault from the Files picker.",
-                    "Pair the computer by entering or scanning its device ID and folder ID.",
+                    "Configure the computer by entering or scanning its device ID and Folder ID.",
                 ]
             ))
         }
-        if context.phase == .waitingForPeer || (!context.peerConnected && context.phase.isActive) {
+        if context.phase == .waitingForPeer ||
+            (!context.peerConnected && context.profileConfigured &&
+             (context.phase.isActive || context.phase == .failed)) {
             result.append(.init(
                 id: .peerOffline,
                 title: "Computer looks offline",
@@ -50,7 +52,7 @@ enum RecoveryGuidance {
                 title: "Folder ID mismatch",
                 steps: [
                     "Open Syncthing on the computer and copy the exact folder ID of the vault.",
-                    "Edit pairing in Vault Sync and paste it without extra spaces.",
+                    "Edit the computer settings in Vault Sync and paste it without extra spaces.",
                 ]
             ))
         }
@@ -68,7 +70,8 @@ enum RecoveryGuidance {
         }
         if context.phase == .failed,
            let error = context.lastError,
-           error.localizedCaseInsensitiveContains("timed out") {
+           (error.localizedCaseInsensitiveContains("timed out") ||
+            error.localizedCaseInsensitiveContains("did not become up to date")) {
             result.append(.init(
                 id: .sessionTimeout,
                 title: "Session timed out",

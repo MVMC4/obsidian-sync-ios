@@ -37,6 +37,7 @@ struct PairingView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
+                    explanationCard
                     thisIPadCard
                     peerCard
                     folderCard
@@ -55,20 +56,33 @@ struct PairingView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(VaultPalette.parchment.ignoresSafeArea())
-            .navigationTitle(existingProfile == nil ? "Pair a device" : "Sync settings")
+            .navigationTitle(existingProfile == nil ? "Configure computer" : "Sync settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }.fontWeight(.semibold)
+                    Button("Save settings") { save() }.fontWeight(.semibold)
                 }
             }
             .sheet(isPresented: $isShowingScanner) {
                 QRCodeScannerSheet { payload in handleScannedPayload(payload) }
             }
         }
+    }
+
+    private var explanationCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("What this step does", systemImage: "info.circle.fill")
+                .font(.headline)
+                .foregroundStyle(VaultPalette.teal)
+            Text("This saves the computer and folder details. It does not connect yet. After saving, return to the dashboard and tap Sync now; that session will show whether the computer is connected and whether both sides are up to date.")
+                .font(.footnote)
+                .foregroundStyle(VaultPalette.muted)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .vaultPanel()
     }
 
     private var thisIPadCard: some View {
@@ -117,7 +131,7 @@ struct PairingView: View {
             styledField($folderID, placeholder: "exactly as on the computer", mono: true, caps: false)
             fieldLabel("Display label")
             styledField($folderLabel, placeholder: "Notes", mono: false, caps: true)
-            Text("The folder ID must exactly match the folder ID configured for the vault on your computer.")
+            Text("On the computer, open this vault folder in Syncthing and copy its Folder ID. This is not the vault name or its file path. It must match exactly on both devices.")
                 .font(.footnote).foregroundStyle(VaultPalette.muted)
         }
         .vaultPanel()
