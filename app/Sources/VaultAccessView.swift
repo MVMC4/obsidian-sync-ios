@@ -2,6 +2,7 @@ import SwiftUI
 
 struct VaultAccessView: View {
     @StateObject private var access = VaultAccessCoordinator()
+    @StateObject private var engine = SyncthingBridge()
     @State private var isPickingFolder = false
     @State private var isRunning = false
     @State private var resultMessage: String?
@@ -11,6 +12,7 @@ struct VaultAccessView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     header
+                    engineCard
                     selectionCard
                     testCard
                 }
@@ -20,6 +22,9 @@ struct VaultAccessView: View {
             }
             .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("Vault Access Lab")
+            .task {
+                engine.prepare()
+            }
             .sheet(isPresented: $isPickingFolder) {
                 FolderPicker(
                     onSelection: { url in
@@ -31,6 +36,31 @@ struct VaultAccessView: View {
                 )
             }
         }
+    }
+
+    private var engineCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Embedded sync engine", systemImage: "checkmark.seal")
+                .font(.headline)
+
+            if let deviceID = engine.deviceID {
+                Text("Core ready")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.green)
+                Text(deviceID)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            } else if let error = engine.lastError {
+                Label(error, systemImage: "xmark.octagon.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            } else {
+                ProgressView("Preparing device identity…")
+            }
+        }
+        .padding(20)
+        .background(.background, in: RoundedRectangle(cornerRadius: 20))
     }
 
     private var header: some View {
