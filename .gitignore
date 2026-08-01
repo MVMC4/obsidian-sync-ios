@@ -27,3 +27,8 @@ coverage.out
 Thumbs.db
 .idea/
 .vscode/
+
+# Generated handoff bundle and Xcode project (regenerable, not source)
+handoff/obsidian-sync-ios-codebase.txt
+app/*.xcodeproj/
+app/ObsidianSync.xcodeproj/

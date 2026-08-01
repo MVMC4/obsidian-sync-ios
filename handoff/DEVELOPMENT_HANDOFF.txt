@@ -1,0 +1,358 @@
+OBSIDIAN SYNC IOS - EXHAUSTIVE DEVELOPMENT HANDOFF
+
+ROLE AND PRIMARY OBJECTIVE
+
+You are taking over implementation of a native iOS/iPadOS application currently called Vault Sync. It is an open-source, MIT-licensed, foreground Syncthing client designed specifically to synchronize an existing Obsidian vault between an iPad and the user's existing Syncthing devices without requiring a paid sync service.
+
+Continue working directly in this repository until the requested product work is implemented, reviewed, tested once as a consolidated pass, committed incrementally, pushed to the user's public GitHub repository, and documented. Do not present a speculative tutorial in place of implementation.
+
+REPOSITORY AND OWNERSHIP
+
+Local repository:
+C:\Users\Nido\Desktop\Projects\Active\obsidian-sync-ios
+
+Public GitHub repository:
+https://github.com/MVMC4/obsidian-sync-ios
+
+Git branch:
+main
+
+GitHub account:
+MVMC4
+
+GitHub CLI executable on this Windows machine:
+C:\Users\Nido\AppData\Local\Microsoft\WinGet\Packages\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\bin\gh.exe
+
+Go executable on this Windows machine:
+C:\Users\Nido\AppData\Local\Programs\Go\go1.25.12\bin\go.exe
+
+The latest pushed commit before the current unfinished feature work is:
+08e0b56 docs: record QR pairing verification [skip ci]
+
+Do not put Codex, ChatGPT, Gemini, OpenAI, or another assistant name in the source, documentation, commit messages, repository metadata, or product credits. The work must appear under the user's ownership. Preserve the MIT license and third-party notices.
+
+FIRST REQUIRED HANDOFF ACTION
+
+Create scripts/export-codebase.py as a Python equivalent of scripts/export-codebase.ps1. It must export the repository's human-readable source, configuration, workflow, test, and handoff files into one UTF-8 text bundle. It must exclude every Markdown file, all generated/build directories and Xcode derived data, package caches, dependency/vendor directories, the .git directory, binary libraries/frameworks, images, archives, and the output bundle itself. It must include untracked source files, use stable relative-path sorting, add a clear FILE header before every file, and include current branch, HEAD, and short working-tree status in the bundle header. Do not run tests merely to create this exporter.
+
+USER'S CURRENT PRODUCT REQUEST
+
+Implement all of the following before running tests:
+
+1. A recent-file activity display.
+2. A much more complete first-launch onboarding experience.
+3. Recovery and settings screens needed for realistic device use.
+4. A final interface inspired by the supplied Wispr Flow screenshots, without copying protected branding or proprietary visual assets.
+5. Final original app icon and branding, refined spacing, restrained animation, Dynamic Type support, VoiceOver/accessibility labels, adequate contrast, minimum target sizes, and Reduce Motion behavior.
+
+The user explicitly said not to test continuously. Finish the entire requested implementation first. Only after the source work is complete should you perform one consolidated local build/test/verification cycle, fix resulting issues, then push and monitor the final CI workflows. Do not start periodic tests, watchers, background CI polling, or continuous test loops.
+
+DESIGN DIRECTION FROM THE USER'S FOUR REFERENCES
+
+The supplied screenshots communicate this visual language:
+
+- Warm parchment or cream page surfaces.
+- Large ink-black sections and cards with very generous rounded corners.
+- Thick, confident dark outlines around controls and panels.
+- Editorial serif display headlines paired with a clean, highly readable sans-serif body face.
+- Lilac, saturated orange, and deep teal accent colors.
+- Capsule/pill buttons and compact status badges.
+- Spacious layouts with dramatic scale changes rather than dense conventional settings forms.
+- Playful but restrained motion language: dotted curves, pulses, orbiting marks, flowing ribbons, or small hand-drawn-like accents.
+- Strong black/cream contrast and isolated accent color rather than generic iOS indigo gradients.
+
+Build an original implementation. Do not use the Wispr Flow name, logo, copy, illustrations, images, or exact layouts. A suitable original brand direction is “Vault Sync” with the phrase “Your notes, in motion.” Prefer code-native SwiftUI shapes and SF Symbols for interface decoration. The app icon must be original and must not reproduce the Obsidian, Syncthing, or Wispr Flow marks.
+
+PRODUCT AND PLATFORM CONSTRAINTS
+
+- This is a native SwiftUI iOS/iPadOS application, not Android Studio, Flutter, React Native, or a web wrapper.
+- A Mac with Xcode is required for the final signed device build. The current Windows environment can implement and run Go tests, while GitHub's macOS runner verifies the iOS project.
+- The user will eventually install the app through Xcode using an Apple ID/development team. A free Apple developer account can sign a personal device build but has provisioning limitations and typically requires periodic re-signing; App Store/TestFlight distribution requires the appropriate paid Apple program.
+- The app cannot arbitrarily browse another app's private sandbox. It uses the system document picker and a persisted security-scoped bookmark to access the user-selected Obsidian vault exposed through the Files provider.
+- Sync runs only while the app is in the foreground. If the scene stops being active, cancel the session and release the security-scoped resource. Do not claim reliable background synchronization.
+- The app should use a manual workflow: open Vault Sync, start sync, keep it open until both sides are verified current, let the embedded engine stop and release access, then return to Obsidian.
+- Network access is direct Syncthing protocol. The embedded configuration currently uses TCP. QUIC, NAT traversal, and STUN were intentionally excluded from the current iOS-safe build. Discovery and relays are supported where currently configured.
+- Never store Syncthing engine state or certificates in the synchronized vault. Store them in the application's Application Support directory.
+- Never put raw absolute vault paths, device IDs, peer labels, addresses, keys, or raw internal errors into exported diagnostics.
+
+CURRENT ARCHITECTURE
+
+Go core:
+
+- core/mobilecore is a thin gomobile-bindable API around Syncthing v2.1.1.
+- client.go serializes engine lifecycle and exposes primitive/string APIs safe for gomobile.
+- syncthing_engine.go owns Syncthing application construction, identity, lifecycle, event logger, configuration wrapper, and service goroutines.
+- configuration.go configures a peer and one send/receive folder and explicitly requests scans.
+- status.go exposes a versioned JSON snapshot used by Swift to decide when both sides are genuinely up to date.
+- transfer_integration_test.go starts two independent Syncthing processes and proves exact bidirectional content transfer.
+- build-core-xcframework.sh cross-compiles the core into Mobilecore.xcframework for device and simulator architectures.
+
+Swift application:
+
+- SyncthingBridge.swift wraps the gomobile-generated Mobilecore API and decodes versioned JSON.
+- VaultBookmarkStore.swift persists a versioned bookmark record under Application Support/VaultSync.
+- VaultAccessCoordinator.swift resolves the bookmark, starts security-scoped access, refreshes stale bookmarks, and releases access through VaultAccessSession.
+- SyncProfile.swift and SyncProfileManager.swift persist and validate the remote device/folder configuration.
+- SyncSessionController.swift owns the foreground session state machine, cancellation, stable completion sampling, safe engine stop, conflict scan, and diagnostic phase recording.
+- PairingView.swift supports manual peer entry and device-ID QR scanning. PairingQRCode.swift validates Syncthing device-ID QR data including checksums through the Go core.
+- Diagnostics.swift persists bounded redacted session events and creates a shareable redacted JSON report.
+- VaultConflictScanner.swift searches for preserved Syncthing conflict copies after sync.
+- VaultSpikeRunner.swift verifies create/read/edit/rename/delete access using a temporary Markdown file.
+- VaultAccessView.swift is the current dashboard and will be substantially redesigned.
+- XcodeGen generates the Xcode project from app/project.yml.
+
+KNOWN COMPLETED FUNCTIONALITY
+
+- Syncthing v2.1.1 embedded behind a narrow Go API.
+- Persistent Syncthing identity stored outside the vault.
+- TCP listener and direct peer connectivity.
+- Dynamic discovery/relay configuration supported by existing profile behavior.
+- QUIC, NAT, and STUN disabled intentionally.
+- Security-scoped document-picker vault access saved and restored.
+- Manual foreground session lifecycle.
+- Scene deactivation cancels an active sync.
+- Peer and folder configuration.
+- Explicit vault scanning.
+- Folder and peer completion polling.
+- Two consecutive stable up-to-date samples required before success.
+- Engine stop and bookmark access release before declaring completion.
+- Conflict-copy scanning and attention result.
+- Redacted diagnostic event persistence/export.
+- Manual device/folder configuration UI.
+- Local device QR display.
+- Camera QR scanning for remote device IDs.
+- Syncthing checksum-backed device-ID normalization.
+- Independent-process exact bidirectional transfer integration test.
+- GitHub Actions workflows for core and iOS validation.
+
+LAST VERIFIED GREEN RESULTS BEFORE CURRENT UNTESTED WORK
+
+- Core workflow run 30697607940 passed with 77.4% coverage.
+- iOS workflow run 30697607944 passed.
+- The QR pairing verification was recorded in commit 08e0b56.
+- No continuous test or workflow process should currently be running.
+
+CURRENT UNCOMMITTED WORK - DO NOT DISCARD
+
+There are three current Go changes for recent activity:
+
+1. New file core/mobilecore/activity.go.
+   - Defines a bounded activityRecorder with a maximum of 40 entries per folder.
+   - Subscribes conceptually to local and completed item events.
+   - Converts LocalChangeDetected into outgoing/detected activity.
+   - Converts ItemFinished into incoming/completed or failed activity.
+   - Emits schemaVersion, folderID, and newest-first items as JSON.
+   - Records only sanitized relative paths.
+   - Rejects blank, absolute, drive-prefixed, or traversal paths.
+   - Normalizes action and item type values.
+   - Deduplicates equivalent adjacent path/direction/action events.
+   - Does not expose raw error text; it exposes only completed/failed.
+
+2. Modified core/mobilecore/syncthing_engine.go.
+   - Adds an activity recorder to syncthingEngine.
+   - Creates it at engine start.
+   - Subscribes to events.LocalChangeDetected and events.ItemFinished.
+   - Adds a context-bound collector goroutine to the service wait group.
+
+3. Modified core/mobilecore/client.go.
+   - Adds RecentActivityJSON(folderID) to configurationEngine.
+   - Exposes Client.RecentActivityJSON through the gomobile-safe API.
+
+These changes have deliberately not been formatted, compiled, or tested yet because the user requested a single final test pass. Inspect and build on them. Do not reset or overwrite them. Anticipate that test fakes satisfying configurationEngine will need a RecentActivityJSON stub before compilation.
+
+RECENT ACTIVITY IMPLEMENTATION TO COMPLETE
+
+Go side:
+
+- Review activity.go and the event subscription for Syncthing v2.1.1 API correctness without prematurely running tests.
+- Ensure the subscription cannot leak or deadlock during Stop.
+- Ensure all concurrent recorder access is synchronized.
+- Keep the snapshot versioned and newest-first.
+- Add focused unit tests for path sanitization, normalization, deduplication, bounds, folder filtering, and JSON contract, but do not execute them until the consolidated final test pass.
+- Add a RecentActivityJSON stub to delayedScanEngine and any other fake that must satisfy configurationEngine.
+- Extend the independent-process integration test, if reliable, to confirm an outbound relative path and inbound relative path appear without leaking absolute vault locations.
+
+Swift side:
+
+- Add Codable models such as SyncActivitySnapshot and SyncActivityItem. Use a stable computed identity rather than assuming paths are unique.
+- Extend SyncEngineControlling with recentActivity(folderID:), and implement it in SyncthingBridge using client.recentActivityJSON(..., error:).
+- Poll activity non-fatally during an active session so the display updates while syncing.
+- Capture one final activity snapshot before stopping the engine.
+- Persist a small bounded history under Application Support so entries remain visible after the one-shot engine stops or the app relaunches.
+- Merge and deduplicate current-session entries carefully; keep newest first and do not mix absolute paths into persisted state.
+- Do not let activity decoding/storage failures fail a sync session.
+- Update all Swift fake engines and add activity/store/controller tests without running them early.
+
+ONBOARDING TO IMPLEMENT
+
+Create a versioned first-launch preference/store and a polished multi-page onboarding flow. The content should clearly explain:
+
+1. Your notes, in motion: this is a manual foreground sync client, not invisible background sync.
+2. Choose the real vault: use the Files folder picker to explicitly grant access to On My iPad > Obsidian > the user's vault, or the actual Files-provider location.
+3. Pair directly: add this iPad's device ID on the existing Syncthing computer, share the existing folder with the iPad, then enter/scan the computer device ID and exact Syncthing folder ID in the app.
+4. Sync and verify: keep the app open until it reports verified completion, then return to Obsidian. Mention conflict copies and recovery.
+
+Requirements:
+
+- Show automatically only on first launch for the current onboarding schema version.
+- Provide sensible Back/Next/Get started controls and progress indication.
+- Respect Dynamic Type, compact iPhone layouts, iPad width, and VoiceOver order.
+- Provide a replay-onboarding action from Settings.
+- Do not force users to grant folder or camera permission merely to read onboarding.
+
+RECOVERY AND SETTINGS TO IMPLEMENT
+
+Create an intentional Settings/Recovery area rather than leaving advanced actions in one dashboard disclosure group. Include:
+
+- Current selected vault summary and computer/pairing summary.
+- Change or repair vault access through the document picker.
+- A run-vault-access-test action with clear in-progress/success/failure states.
+- Edit pairing action.
+- Forget saved vault permission, protected by a confirmation dialog.
+- Remove/forget pairing profile, protected by a confirmation dialog.
+- Display and copy/select the local device ID and its QR code.
+- Redacted diagnostics report preparation and ShareLink.
+- Explanation of what diagnostics exclude.
+- Replay onboarding.
+- App version/build and concise open-source/MIT attribution.
+- Recovery guidance that maps common states to concrete actions: peer offline, wrong folder ID, expired/stale vault access, session timeout, conflict copies, and local-network permission.
+- No button should silently remove user configuration.
+- Recovery actions must be disabled while a sync session is active when they could invalidate the running configuration.
+
+FINAL INTERFACE TO IMPLEMENT
+
+Create a reusable visual system in a dedicated Swift file. Suggested original tokens:
+
+- Parchment: approximately #F7F3DE.
+- Ink: approximately #171717.
+- Lilac: approximately #E8C8FF.
+- Orange: approximately #FFA33B.
+- Deep teal: approximately #006B5E.
+- Muted warm gray for secondary copy.
+
+Use semantic/adaptive variants where needed for contrast and dark appearance. Prefer system serif design for display text and system sans-serif for body text so there is no font licensing or packaging issue.
+
+Dashboard direction:
+
+- A dramatic but readable editorial hero with the original tagline.
+- One clear sync hero panel showing phase, peer state, progress, and the primary Sync now/Stop action.
+- Warm light background with ink panels or deliberate ink sections.
+- Outlined cream/lilac/orange pill controls rather than generic indigo button styling.
+- Recent activity as a prominent, bounded list with direction icons, filenames, parent paths, action/result, timestamps, and good empty state.
+- Setup status shown as compact, actionable cards.
+- Conflicts shown as a high-priority recovery card, without exposing more paths than needed.
+- Move diagnostics and destructive/reset actions to Settings.
+- Provide navigation appropriate for iPhone and iPad, while keeping the primary sync action obvious.
+
+Pairing direction:
+
+- Replace the generic Form aesthetic with scrollable outlined sections/cards using the same visual system.
+- Preserve keyboard behavior, autocapitalization rules, monospaced device ID entry, QR scanner, local QR display, cancel/save controls, and error reporting.
+- Explain dynamic discovery versus an explicit TCP address without claiming unavailable protocols.
+
+Motion and accessibility:
+
+- Use restrained code-native motion such as a slow rotating or orbiting sync mark, dotted path phase, or status pulse.
+- Read Environment accessibilityReduceMotion and stop decorative animation when enabled.
+- Avoid motion that communicates the only indication of status.
+- Use Dynamic Type styles and flexible frames instead of fixed text heights.
+- Ensure every icon-only control has an accessibility label and hint.
+- Ensure color is never the only status indicator.
+- Maintain at least 44-point interactive targets.
+- Verify contrast for cream, ink, lilac, orange, and teal combinations.
+- Give status changes appropriate accessibility semantics/live-region behavior where supported.
+
+APP ICON AND ASSET INTEGRATION
+
+Create an original 1024-by-1024 app icon that matches the visual system: warm cream, ink-black, lilac, orange, and deep teal; a simple vault/notebook/flow concept; strong silhouette; no text; no transparency; no third-party logo; no watermark. Integrate it through Resources/Assets.xcassets/AppIcon.appiconset and update app/project.yml with the Resources source and ASSETCATALOG_COMPILER_APPICON_NAME as needed. Check the generated image visually before committing it.
+
+If image generation is unavailable in the receiving environment, create a clean code/vector-native placeholder asset workflow and explicitly identify app-icon artwork as awaiting generation; do not download or reuse a protected logo.
+
+TESTING POLICY AND FINAL VERIFICATION
+
+Do not run tests until all requested source work above is complete. Once complete, perform one consolidated pass:
+
+1. Review git diff and search for accidental secrets, assistant references, absolute user paths, debug artifacts, and proprietary copied assets.
+2. Format Go source with gofmt.
+3. Run the repository's core test script or equivalent vet, race-enabled test, integration test, and coverage process.
+4. Generate or validate the Xcode project configuration without committing generated build products.
+5. Run whatever local Swift/static checks are possible in the current environment.
+6. Commit coherent implementation milestones incrementally. It is acceptable to create source-only commits before the final test pass, but do not push them in a way that triggers repeated CI while the feature set is incomplete.
+7. Push the completed branch once the local consolidated pass is green.
+8. Monitor the core and iOS GitHub Actions workflows to completion once, fixing failures if needed.
+9. Update README/STATUS/docs build and test logs only after the real results are known. Do not fabricate logs.
+10. Leave generated build directories, Xcode DerivedData, frameworks, and transient test reports out of Git.
+
+Important test additions to prepare before the final run:
+
+- Go activity recorder contract and sanitization tests.
+- Swift activity decoder/store/merge tests.
+- Sync session activity polling/final capture tests.
+- Onboarding version-store tests.
+- Settings/reset behavior tests where logic is separable from SwiftUI.
+- Existing fake engines updated for the new protocol requirement.
+- Accessibility identifiers or labels for critical UI if UI automation is later introduced.
+
+PHYSICAL IPAD WORK THAT WILL STILL REMAIN AFTER CI
+
+Do not falsely declare the entire product proven until a real device matrix is completed. After implementation and CI, the user must still verify on an iPad:
+
+- Folder picker can select the actual Obsidian vault.
+- Bookmark survives force quit and device restart.
+- Local Network and Camera permission prompts are understandable.
+- QR scan works on a real camera.
+- Direct/discovery/relay connectivity behaves on the user's networks.
+- Foreground cancellation occurs when switching away.
+- Incoming and outgoing Markdown files appear correctly in both Obsidian and desktop Syncthing.
+- Deletes, renames, Unicode filenames, nested folders, hidden .obsidian content, attachments, and larger vaults behave acceptably.
+- Conflict copies are surfaced correctly.
+- Recent activity direction/result labels match real events.
+- Settings repair/reset actions work and confirmation dialogs prevent accidents.
+- Layout is usable in iPad portrait/landscape, iPhone widths if supported, dark mode, large Dynamic Type, VoiceOver, and Reduce Motion.
+- Free-account development signing/provisioning limitations are understood.
+
+DOCUMENTATION EXPECTATIONS
+
+After final verification, update the repository documentation to explain:
+
+- Motivation: Syncthing has no official free iOS client suitable for this personal Obsidian workflow, so this project provides an open-source foreground alternative.
+- Honest platform limitations and the security-scoped folder model.
+- Current feature status.
+- Windows/Linux development versus Mac/Xcode signing responsibilities.
+- Exact build steps for Go core, gomobile XCFramework, XcodeGen, code signing, device deployment, tests, and troubleshooting.
+- App privacy model and diagnostics redaction.
+- Recent activity semantics and bounds.
+- The physical-iPad checklist and remaining unverified items.
+
+INCREMENTAL COMMIT EXPECTATION
+
+Use focused commits with ordinary project-oriented messages, for example:
+
+- feat: add bounded recent vault activity
+- feat: add guided first-launch onboarding
+- feat: add recovery and settings hub
+- style: apply vault sync visual system
+- assets: add original app icon
+- test: cover activity and preference persistence
+- docs: record final interface verification [skip ci]
+
+Do not squash away useful milestones unless the user asks. Do not amend or rewrite already-pushed history. Never use destructive Git commands against user work.
+
+DEFINITION OF DONE FOR THIS HANDOFF
+
+The current software implementation portion is done only when:
+
+- Recent activity works end-to-end from Syncthing events through the Go bridge, Swift persistence, live session updates, and UI.
+- First launch onboarding is versioned, complete, replayable, accessible, and polished.
+- Settings and recovery actions are present, confirmed where destructive, and safe during sync.
+- Dashboard and pairing are consistently redesigned in the original editorial visual system.
+- Original app icon/resources are integrated.
+- Accessibility and Reduce Motion have been explicitly reviewed.
+- All existing and new tests pass in the single consolidated local/final CI cycle.
+- Repository history contains sensible incremental commits.
+- GitHub main is pushed and workflows are green.
+- Real test/build logs and status documents are updated.
+- Remaining physical-iPad work is stated honestly rather than marked complete.
+
+Begin by inspecting git status and the three uncommitted Go activity files. Preserve them. Create the required Python exporter. Then continue the implementation plan without starting tests until the entire requested source pass is complete.
+
