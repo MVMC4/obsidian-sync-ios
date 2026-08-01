@@ -89,6 +89,11 @@ backgrounding is treated as an interruption. The controller stops accepting new
 work, requests an orderly engine stop, releases the bookmark scope, persists the
 last safe status, and becomes resumable on the next foreground launch.
 
+The MVP uses Syncthing's TCP transport with discovery and relay support. QUIC,
+STUN, and NAT traversal remain disabled until their shutdown is race-free in the
+embedded lifecycle. Configuration and event services are explicitly joined
+before the app releases engine state or vault access.
+
 ## Why not the original low-level package plan?
 
 Current Syncthing provides `lib/syncthing.App` with lifecycle methods and an
@@ -103,4 +108,3 @@ Sushitrain is useful evidence and a source of implementation patterns: it uses a
 Swift/SwiftUI front end, a Go framework, `gomobile`, and a full in-process
 Syncthing node. We should study and credit compatible MPL-2.0 code where useful,
 but keep this MVP narrow and avoid copying its branding or reserved artwork.
-

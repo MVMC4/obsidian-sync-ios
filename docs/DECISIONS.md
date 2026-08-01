@@ -30,6 +30,14 @@ Support. Only the mapped folder content lives in the selected vault.
 The first end-to-end target is a throwaway vault with backups, not the user's
 primary notes.
 
+### D-006: TCP-first transport for the MVP
+
+Listen over Syncthing TCP with local/global discovery and relays available, but
+do not start QUIC, STUN, or NAT traversal. A race-enabled integration run found
+an upstream QUIC/STUN shutdown race. Foreground sessions need predictable teardown
+more than an additional transport. Reconsider QUIC after upstream behavior is
+safe and repeatable on iPadOS.
+
 ## Open decisions
 
 - Minimum iOS/iPadOS version.
@@ -38,7 +46,8 @@ primary notes.
 - Whether sustained Go I/O needs a Swift coordination adapter or can safely use
   the locally selected Obsidian directory during the held security scope.
 - Pairing UX: manual device ID first, QR scanning in the MVP or later.
-- Default discovery policy: static local address only versus local discovery.
+- Whether the final UI should expose discovery and relay controls or keep the
+  TCP-first defaults implicit.
 - Whether `.obsidian/workspace*.json` and other high-churn UI state should be in
   a recommended default `.stignore` template.
 - Personal sideload only versus TestFlight/App Store release.
@@ -83,4 +92,3 @@ algorithm and increases conflict and data-loss risk.
   https://github.com/syncthing/syncthing
 - Sushitrain reference implementation and build notes:
   https://github.com/pixelspark/sushitrain
-

@@ -67,3 +67,25 @@ will remain attached to their corresponding workflow runs.
   mapping, mobile-oriented manual scan settings, and explicit scan requests
 - Verified: real engine start, runtime configuration commit, vault scan, and
   orderly shutdown
+
+### Remote race-detector failure
+
+- Revision: `8acf427`
+- Result: failed during `TestRealEngineConfiguresPeerFolderAndScan`
+- Finding: the upstream QUIC/STUN service raced during shutdown; the config
+  wrapper also attempted its deferred save after the test state directory was
+  released
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30691951625
+
+## 2026-08-01 — Deterministic engine shutdown
+
+- Host: Windows amd64 and GitHub-hosted Ubuntu runner
+- Revision: `2a1c2b8`
+- Result: passed
+- Change: constrained the foreground MVP transport listener to TCP, disabled
+  NAT/STUN, and waited for configuration and event services to terminate
+- Verified locally: format, vet, coverage, and five consecutive integration-test
+  cycles
+- Verified remotely: format, vet, race detector, real engine integration, and
+  coverage
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692178161

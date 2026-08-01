@@ -59,4 +59,10 @@ not exist.
 - Statement coverage: 75.8%
 - Covered: address parsing defaults and errors, peer configuration, vault-folder
   configuration, manual watcher policy, explicit scan, and runtime persistence
-- Remote race-enabled CI: pending for the corresponding commit
+- The first remote race-enabled run failed in the upstream QUIC/STUN shutdown
+  path and exposed a deferred configuration save outliving the test state path
+- Remediation assertions cover the TCP-only listener and disabled NAT/STUN
+- `go test -tags noassets -count=5 ./...`: passed locally
+- Local statement coverage after remediation: 76.9%
+- Remote `go test -tags noassets -race -coverprofile=coverage.out ./...`: passed
+- Passing run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692178161
