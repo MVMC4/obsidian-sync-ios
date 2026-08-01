@@ -145,3 +145,30 @@ will remain attached to their corresponding workflow runs.
   compile, iPad Pro Simulator installation, native unit tests, persistent
   Syncthing device identity, and engine start/stop through Swift
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30694852522
+
+## 2026-08-01 — Manual sync-session slice
+
+### Folder status core
+
+- Revision: `5b94846`
+- Ubuntu core workflow: passed with race detection
+- Verified: folder state, peer connection, local and remote need counts,
+  completion percentages, JSON schema, and conservative up-to-date policy
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30695135505
+
+### Swift status bridge correction
+
+- The first native attempt at revision `382c5c3` built the XCFramework but
+  failed Swift compilation because gomobile's string-plus-error method retains
+  an explicit `NSError` pointer
+- Corrected revision: `af3935c`
+- Result: full iOS workflow passed in 4 minutes 30 seconds
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30695410985
+
+### Functional dashboard
+
+- Revision: `e45243f`
+- Result: full iOS workflow passed in 3 minutes 33 seconds
+- Verified: XCFramework, generated Xcode project, linked app, dashboard compile,
+  Simulator installation, session/profile tests, and uploaded framework artifact
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30695630517

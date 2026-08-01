@@ -94,6 +94,22 @@ STUN, and NAT traversal remain disabled until their shutdown is race-free in the
 embedded lifecycle. Configuration and event services are explicitly joined
 before the app releases engine state or vault access.
 
+## Session completion contract
+
+Swift polls a versioned JSON snapshot instead of importing Syncthing model
+types. A session is complete only after consecutive snapshots report all of the
+following:
+
+- the configured peer is connected;
+- the local folder state is idle;
+- local needed items and deletes are zero;
+- remote needed items and deletes are zero; and
+- local and remote completion are both 100 percent.
+
+After verification, Swift stops the engine before releasing the security-scoped
+vault URL. Timeout, cancellation, configuration failure, and app foreground loss
+all enter the same cleanup path.
+
 ## Why not the original low-level package plan?
 
 Current Syncthing provides `lib/syncthing.App` with lifecycle methods and an

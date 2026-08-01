@@ -93,3 +93,19 @@ not exist.
 - Full linked iOS workflow: passed in 3 minutes 56 seconds
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30694852522
 - Physical iPad engine lifecycle and networking: not run
+
+## 2026-08-01 — Manual sync-session tests
+
+- Go folder-status integration test: passed locally and under the Ubuntu race
+  detector
+- `SyncProfileStoreTests`: passed
+- `SyncSessionControllerTests`: passed
+- Covered: profile normalization and persistence, dynamic-address defaults,
+  peer/folder configuration order, scan request, disconnected-peer handling,
+  two consecutive complete samples, timeout without false success, engine stop,
+  and exactly-once vault release after success or failure
+- Native dashboard and all prior Swift tests: passed on iPad Pro 11-inch (M4)
+  Simulator with iOS 18.5 and Xcode 16.4
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30695630517
+- Real desktop-to-iPad transfer, conflict, interruption, and Obsidian visibility:
+  not run; these remain physical-device gates

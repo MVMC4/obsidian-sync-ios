@@ -38,9 +38,12 @@ The real Syncthing engine, peer and vault configuration, and manual scanning are
 implemented behind a narrow Go facade. A native SwiftUI vault-access spike now
 compiles and passes automated tests on an iPad Simulator. The real Go core is
 cross-compiled as an XCFramework, linked into the Swift app, and exercised from
-Swift through a complete start/stop cycle. The next gating task is to run that
-spike against a disposable Obsidian vault on a physical iPad; a Simulator cannot
-prove cross-app folder permission behavior.
+Swift through a complete start/stop cycle. The app now includes persistent peer
+and folder settings, a bounded foreground sync-session controller, two-sided
+completion checks, cancellation, and a functional native dashboard. The next
+gating task is to run it against a disposable Obsidian vault and real desktop
+peer on a physical iPad; a Simulator cannot prove cross-app folder permission or
+real network-transfer behavior.
 
 See:
 

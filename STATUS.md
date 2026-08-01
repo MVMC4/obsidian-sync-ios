@@ -18,6 +18,12 @@ Phase 0 — feasibility gates.
 - Pinned `gomobile` build produces device and Simulator XCFramework slices.
 - Swift bridge creates a persistent device identity and starts/stops the real
   embedded engine in an iPadOS Simulator test.
+- Versioned folder status reports connection, local need, remote need, folder
+  state, completion percentages, and a conservative up-to-date decision.
+- Persistent peer/folder profile and bounded foreground sync state machine
+  implemented with cleanup, cancellation, timeout, and stable-result tests.
+- Functional SwiftUI dashboard supports vault selection, pairing, settings,
+  sync start/stop, two-sided progress, and permission diagnostics.
 
 ## Next concrete task
 
@@ -29,8 +35,9 @@ Build a tiny SwiftUI device spike on macOS that:
 4. repeats those operations after terminating and relaunching the app; and
 5. verifies that Obsidian sees the changes.
 
-The code for this spike is complete. The remaining task is signing, installing,
-and executing it on physical hardware.
+The code for this spike and the first complete manual session path is complete.
+The remaining gate is signing and executing it on physical hardware against a
+disposable vault and a real Windows or Linux peer.
 
 ## Exit condition
 

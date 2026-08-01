@@ -183,6 +183,10 @@ idle
 The UI can start, cancel, and finish a real two-device sync and always returns to
 a stable state after interruption, networking loss, or app backgrounding.
 
+Implementation status: the state machine, timeout, cancellation, stable-result
+verification, and cleanup paths are implemented and Simulator-tested. The real
+two-device and background-transition matrix remains pending on physical hardware.
+
 ## 7. Phase 5 — onboarding and minimum UI
 
 ### Screens
@@ -193,6 +197,11 @@ a stable state after interruption, networking loss, or app backgrounding.
 4. **Accept folder:** map the remote folder ID to the selected vault path.
 5. **Sync:** large action button, peer state, progress, recent files, and result.
 6. **Diagnostics:** export redacted logs and configuration summary.
+
+Implementation status: the functional sync dashboard, vault picker, manual
+pairing/settings sheet, live progress, result states, and vault diagnostics are
+implemented. QR pairing, recent-file details, diagnostics export, and final
+visual styling remain pending.
 
 ### UX safety
 
@@ -268,4 +277,3 @@ with Linux or Windows.
 
 The first meaningful milestone is not a polished screen. It is a disposable
 Markdown file that travels Windows/Linux -> iPad -> Windows/Linux without loss.
-
