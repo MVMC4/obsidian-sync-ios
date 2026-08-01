@@ -61,6 +61,7 @@ final class SyncSessionController: ObservableObject {
     private let policy: SyncSessionPolicy
     private let sleeper: Sleeper
     private let conflictScanner: any VaultConflictScanning
+    private let diagnostics: any DiagnosticsRecording
     private var task: Task<Void, Never>?
 
     init(
@@ -68,12 +69,14 @@ final class SyncSessionController: ObservableObject {
         vaultAccess: any VaultAccessProviding,
         policy: SyncSessionPolicy = SyncSessionPolicy(),
         conflictScanner: any VaultConflictScanning = VaultConflictScanner(),
+        diagnostics: any DiagnosticsRecording = NoOpDiagnosticsRecorder(),
         sleeper: @escaping Sleeper = { try await Task.sleep(nanoseconds: $0) }
     ) {
         self.engine = engine
         self.vaultAccess = vaultAccess
         self.policy = policy
         self.conflictScanner = conflictScanner
+        self.diagnostics = diagnostics
         self.sleeper = sleeper
     }
 
@@ -104,21 +107,21 @@ final class SyncSessionController: ObservableObject {
 
         do {
             let validatedProfile = try profile.validated()
-            phase = .acquiringVaultAccess
+            transition(to: .acquiringVaultAccess)
             accessSession = try vaultAccess.openSession()
             try Task.checkCancellation()
 
-            phase = .startingEngine
+            transition(to: .startingEngine)
             try engine.prepare()
             try engine.start()
             engineStarted = true
             try Task.checkCancellation()
 
-            phase = .configuring
+            transition(to: .configuring)
             try engine.configurePeer(validatedProfile)
             try engine.configureFolder(validatedProfile, vaultPath: accessSession!.url.path)
 
-            phase = .scanning
+            transition(to: .scanning)
             try engine.scan(folderID: validatedProfile.folderID)
 
             var stableSamples = 0
@@ -132,16 +135,22 @@ final class SyncSessionController: ObservableObject {
 
                 if current.upToDate {
                     stableSamples += 1
-                    phase = .verifyingCompletion
+                    transition(to: .verifyingCompletion)
                     if stableSamples >= policy.requiredStableSamples {
                         try finish(engineStarted: &engineStarted, accessSession: &accessSession)
-                        phase = conflicts.isEmpty ? .complete : .completeWithConflicts
+                        let completedPhase: SyncSessionPhase = conflicts.isEmpty
+                            ? .complete
+                            : .completeWithConflicts
+                        transition(
+                            to: completedPhase,
+                            outcome: conflicts.isEmpty ? .success : .successWithConflicts
+                        )
                         task = nil
                         return
                     }
                 } else {
                     stableSamples = 0
-                    phase = phaseForStatus(current)
+                    transition(to: phaseForStatus(current))
                 }
 
                 if poll + 1 < policy.maximumPolls {
@@ -151,11 +160,12 @@ final class SyncSessionController: ObservableObject {
             throw SyncSessionError.timedOut
         } catch is CancellationError {
             cleanup(engineStarted: &engineStarted, accessSession: &accessSession)
-            phase = .cancelled
+            transition(to: .cancelled, outcome: .cancelled)
             lastError = nil
         } catch {
+            let outcome = diagnosticOutcome(for: error, phase: phase)
             cleanup(engineStarted: &engineStarted, accessSession: &accessSession)
-            phase = .failed
+            transition(to: .failed, outcome: outcome)
             lastError = error.localizedDescription
         }
         task = nil
@@ -175,7 +185,7 @@ final class SyncSessionController: ObservableObject {
         engineStarted: inout Bool,
         accessSession: inout (any VaultAccessSessionProtocol)?
     ) throws {
-        phase = .stoppingEngine
+        transition(to: .stoppingEngine)
         if engineStarted {
             try engine.stop()
             engineStarted = false
@@ -197,5 +207,30 @@ final class SyncSessionController: ObservableObject {
         }
         accessSession?.close()
         accessSession = nil
+    }
+
+    private func transition(
+        to newPhase: SyncSessionPhase,
+        outcome: DiagnosticOutcome? = nil
+    ) {
+        guard phase != newPhase || outcome != nil else { return }
+        phase = newPhase
+        diagnostics.record(phase: newPhase, status: status, outcome: outcome)
+    }
+
+    private func diagnosticOutcome(
+        for error: Error,
+        phase: SyncSessionPhase
+    ) -> DiagnosticOutcome {
+        if error is SyncSessionError {
+            return .timeout
+        }
+        if error is VaultAccessError || phase == .acquiringVaultAccess {
+            return .vaultAccessFailure
+        }
+        if error is SyncProfileError || phase == .configuring {
+            return .configurationFailure
+        }
+        return .engineFailure
     }
 }

@@ -82,6 +82,26 @@ private struct FakeConflictScanner: VaultConflictScanning {
 }
 
 @MainActor
+private final class FakeDiagnosticsRecorder: DiagnosticsRecording {
+    private(set) var events: [DiagnosticEvent] = []
+
+    func record(
+        phase: SyncSessionPhase,
+        status: FolderSyncStatus?,
+        outcome: DiagnosticOutcome?
+    ) {
+        events.append(
+            DiagnosticEvent(
+                timestamp: Date(timeIntervalSince1970: 0),
+                phase: phase.rawValue,
+                outcome: outcome,
+                status: status.map(DiagnosticStatusSummary.init)
+            )
+        )
+    }
+}
+
+@MainActor
 private final class FakeVaultAccess: VaultAccessProviding {
     let session = FakeVaultSession()
 
@@ -108,11 +128,13 @@ final class SyncSessionControllerTests: XCTestCase {
             FakeSyncEngine.status(connected: true, upToDate: true),
         ]
         let vault = FakeVaultAccess()
+        let diagnostics = FakeDiagnosticsRecorder()
         let controller = SyncSessionController(
             engine: engine,
             vaultAccess: vault,
             policy: SyncSessionPolicy(maximumPolls: 4, pollIntervalNanoseconds: 0, requiredStableSamples: 2),
             conflictScanner: FakeConflictScanner(),
+            diagnostics: diagnostics,
             sleeper: { _ in }
         )
 
@@ -122,6 +144,8 @@ final class SyncSessionControllerTests: XCTestCase {
         XCTAssertEqual(engine.calls.last, "stop")
         XCTAssertEqual(engine.calls.filter { $0 == "status" }.count, 4)
         XCTAssertEqual(vault.session.closeCalls, 1)
+        XCTAssertEqual(diagnostics.events.last?.phase, SyncSessionPhase.complete.rawValue)
+        XCTAssertEqual(diagnostics.events.last?.outcome, .success)
 
         engine.statuses = [
             FakeSyncEngine.status(connected: true, upToDate: true),
@@ -142,10 +166,12 @@ final class SyncSessionControllerTests: XCTestCase {
         let engine = FakeSyncEngine()
         engine.configureError = TestError()
         let vault = FakeVaultAccess()
+        let diagnostics = FakeDiagnosticsRecorder()
         let controller = SyncSessionController(
             engine: engine,
             vaultAccess: vault,
             conflictScanner: FakeConflictScanner(),
+            diagnostics: diagnostics,
             sleeper: { _ in }
         )
 
@@ -155,6 +181,7 @@ final class SyncSessionControllerTests: XCTestCase {
         XCTAssertEqual(controller.lastError, "Invalid peer")
         XCTAssertEqual(engine.calls.last, "stop")
         XCTAssertEqual(vault.session.closeCalls, 1)
+        XCTAssertEqual(diagnostics.events.last?.outcome, .configurationFailure)
     }
 
     @MainActor

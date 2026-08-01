@@ -6,6 +6,7 @@ struct VaultAccessView: View {
     @StateObject private var access: VaultAccessCoordinator
     @StateObject private var engine: SyncthingBridge
     @StateObject private var profiles: SyncProfileManager
+    @StateObject private var diagnostics: DiagnosticsRecorder
     @StateObject private var session: SyncSessionController
 
     @State private var isPickingFolder = false
@@ -13,16 +14,24 @@ struct VaultAccessView: View {
     @State private var isRunningAccessTest = false
     @State private var accessTestResult: String?
     @State private var actionError: String?
+    @State private var diagnosticsExportURL: URL?
+    @State private var diagnosticsExportError: String?
 
     @MainActor
     init() {
         let access = VaultAccessCoordinator()
         let engine = SyncthingBridge()
+        let diagnostics = DiagnosticsRecorder()
         _access = StateObject(wrappedValue: access)
         _engine = StateObject(wrappedValue: engine)
         _profiles = StateObject(wrappedValue: SyncProfileManager())
+        _diagnostics = StateObject(wrappedValue: diagnostics)
         _session = StateObject(
-            wrappedValue: SyncSessionController(engine: engine, vaultAccess: access)
+            wrappedValue: SyncSessionController(
+                engine: engine,
+                vaultAccess: access,
+                diagnostics: diagnostics
+            )
         )
     }
 
@@ -266,6 +275,35 @@ struct VaultAccessView: View {
                         .font(.caption2.monospaced())
                         .textSelection(.enabled)
                 }
+
+                Divider()
+
+                Text("Redacted diagnostics")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text("Creates a JSON report with session states and sync counts. Vault names and paths, device IDs, peer labels, folder IDs, addresses, keys, and raw errors are excluded.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Button("Prepare diagnostics report", systemImage: "doc.badge.gearshape") {
+                    prepareDiagnosticsExport()
+                }
+                .buttonStyle(.bordered)
+                .disabled(session.phase.isActive)
+
+                if let diagnosticsExportURL {
+                    ShareLink(item: diagnosticsExportURL) {
+                        Label("Share redacted report", systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.indigo)
+                }
+
+                if let diagnosticsExportError {
+                    Text(diagnosticsExportError)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
             }
             .padding(.top, 12)
         }
@@ -354,6 +392,25 @@ struct VaultAccessView: View {
             accessTestResult = "Passed: \(report.completedOperations.joined(separator: ", "))."
         } catch {
             accessTestResult = "Failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func prepareDiagnosticsExport() {
+        diagnosticsExportError = nil
+        do {
+            let data = try DiagnosticsReportBuilder.makeData(
+                profile: profiles.profile,
+                vaultSelected: access.hasSelection,
+                engineState: engine.state,
+                phase: session.phase,
+                status: session.status,
+                conflictCount: session.conflicts.count,
+                events: diagnostics.events
+            )
+            diagnosticsExportURL = try DiagnosticsExportWriter().write(data)
+        } catch {
+            diagnosticsExportURL = nil
+            diagnosticsExportError = "The redacted diagnostics report could not be created."
         }
     }
 
