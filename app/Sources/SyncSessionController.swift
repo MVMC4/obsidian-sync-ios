@@ -69,14 +69,14 @@ final class SyncSessionController: ObservableObject {
         vaultAccess: any VaultAccessProviding,
         policy: SyncSessionPolicy = SyncSessionPolicy(),
         conflictScanner: any VaultConflictScanning = VaultConflictScanner(),
-        diagnostics: any DiagnosticsRecording = NoOpDiagnosticsRecorder(),
+        diagnostics: (any DiagnosticsRecording)? = nil,
         sleeper: @escaping Sleeper = { try await Task.sleep(nanoseconds: $0) }
     ) {
         self.engine = engine
         self.vaultAccess = vaultAccess
         self.policy = policy
         self.conflictScanner = conflictScanner
-        self.diagnostics = diagnostics
+        self.diagnostics = diagnostics ?? NoOpDiagnosticsRecorder()
         self.sleeper = sleeper
     }
 
