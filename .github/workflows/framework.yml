@@ -1,0 +1,39 @@
+name: XCFramework build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Go core for iOS
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: core/go.mod
+          cache: false
+
+      - name: Build XCFramework
+        run: ./scripts/build-core-xcframework.sh
+
+      - name: Inspect framework slices
+        run: |
+          test -d core/build/Mobilecore.xcframework
+          find core/build/Mobilecore.xcframework -maxdepth 3 -type f -print | sort
+
+      - name: Upload XCFramework
+        uses: actions/upload-artifact@v7
+        with:
+          name: Mobilecore-xcframework
+          path: core/build/Mobilecore.xcframework
+          retention-days: 7
