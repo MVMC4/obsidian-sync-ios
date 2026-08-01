@@ -38,6 +38,13 @@ an upstream QUIC/STUN shutdown race. Foreground sessions need predictable teardo
 more than an additional transport. Reconsider QUIC after upstream behavior is
 safe and repeatable on iPadOS.
 
+### D-007: plain Syncthing device-ID QR pairing
+
+Display the local canonical device ID as a QR code and scan the plain device-ID
+payload produced by Syncthing's own interface. Validate both scanned and pasted
+IDs through the pinned upstream parser, including check digits. Do not define a
+custom pairing URL or duplicate the device-ID checksum algorithm in Swift.
+
 ## Open decisions
 
 - Minimum iOS/iPadOS version.
@@ -45,7 +52,6 @@ safe and repeatable on iPadOS.
 - Bookmark persistence format after the Phase 0 spike.
 - Whether sustained Go I/O needs a Swift coordination adapter or can safely use
   the locally selected Obsidian directory during the held security scope.
-- Pairing UX: manual device ID first, QR scanning in the MVP or later.
 - Whether the final UI should expose discovery and relay controls or keep the
   TCP-first defaults implicit.
 - Whether `.obsidian/workspace*.json` and other high-churn UI state should be in

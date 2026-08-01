@@ -32,6 +32,8 @@ real notes collection for these tests.
 - [ ] Connect the iPad, select it as the run destination, and run the app.
 - [ ] Accept the Local Network permission prompt.
 - [ ] Confirm the app displays a stable device ID after two launches.
+- [ ] Confirm the app displays a sharp, scannable QR code for that same device
+      ID and that desktop Syncthing reads it correctly.
 
 ## Vault permission gate
 
@@ -50,6 +52,10 @@ real notes collection for these tests.
 - [ ] Add the displayed iPad device ID to desktop Syncthing.
 - [ ] Share the desktop vault folder with the iPad device.
 - [ ] In the iPad app, enter the desktop device ID and the exact folder ID.
+- [ ] Repeat pairing by scanning the desktop's device-ID QR code and confirm the
+      canonical ID is filled in exactly.
+- [ ] Deny camera permission once and confirm the scanner explains the problem
+      while manual device-ID entry remains usable; restore permission afterward.
 - [ ] Start sync and keep the app visible.
 - [ ] Confirm the Local Network prompt, if not already accepted.
 - [ ] Confirm the UI progresses through connection, scan, synchronization, and

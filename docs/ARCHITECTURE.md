@@ -45,6 +45,11 @@ Contains only gomobile-compatible APIs. The contract uses strings, bytes,
 numbers, booleans, small interfaces, or JSON. Generated code is a build artifact,
 not hand-edited source.
 
+The pairing bridge also exposes upstream device-ID normalization. Both pasted
+and scanned IDs are parsed by Syncthing itself, including canonical formatting
+and check-digit validation, so Swift does not maintain a second implementation
+of the identifier algorithm.
+
 ### MobileCore (Go)
 
 Wraps upstream `lib/syncthing`. It owns engine lifecycle, device identity,
@@ -82,6 +87,16 @@ saved profile; it does not serialize the profile itself. Vault names and paths,
 local and peer device IDs, peer labels, folder IDs, network addresses, keys, and
 raw errors are excluded. Unknown engine, folder, and event state strings are
 normalized before export.
+
+## QR pairing boundary
+
+The pinned Syncthing web interface encodes the plain canonical device ID in its
+QR image. The iOS scanner therefore accepts only a payload that the pinned
+Syncthing parser recognizes as a complete device ID. Arbitrary URLs and custom
+pairing payloads are rejected. Camera frames remain inside AVFoundation metadata
+capture; the app receives only the decoded QR string and does not save images.
+Manual entry remains available when camera permission is denied or no camera is
+available.
 
 ## Security model
 

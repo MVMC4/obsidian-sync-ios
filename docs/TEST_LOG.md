@@ -163,3 +163,25 @@ not exist.
 - iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696817304
 - Physical share-sheet behavior and inspection of a report produced after a
   real device session: not run; added to the physical verification gate
+
+## 2026-08-01 — QR pairing and startup-race tests
+
+- Revision: `81e3979`
+- Go `TestNormalizeDeviceID`: passed; verifies trimming, lowercase-to-canonical
+  conversion, upstream check digits, empty rejection, and malformed rejection
+- Swift `PairingQRCodeTests`: passed; verifies trimmed parser input, canonical
+  output, empty/foreign payload rejection, and square visible QR generation
+- Swift `SyncthingBridgeTests.testDeviceIDNormalizationUsesSyncthingChecksums`:
+  passed through the generated Objective-C binding
+- Camera scanner, preview overlay, denied/restricted/unavailable messages, and
+  `NSCameraUsageDescription` compile in the linked app
+- The initial race-enabled run exposed a transient `folder is not running`
+  result between config commit and folder-service readiness
+- `TestScanWhenFolderReadyRetriesTransientFailure`: passed
+- Corrected two-process bidirectional transfer: passed under the race detector
+- Statement coverage: 77.4%
+- Core run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30697607940
+- Full linked iPad Simulator suite: passed
+- iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30697607944
+- Physical camera authorization, live capture, desktop scanning of the iPad QR,
+  and iPad scanning of the desktop QR: not run; added to the physical checklist

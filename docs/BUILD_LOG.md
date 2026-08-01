@@ -229,3 +229,38 @@ will remain attached to their corresponding workflow runs.
 - iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696817304
 - Ubuntu core checks: passed in 2 minutes 29 seconds
 - Core run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696817294
+
+## 2026-08-01 — Checksum-validated QR pairing
+
+### Windows test cleanup hardening
+
+- Revision: `6e60923`
+- Finding: one of five local stress iterations completed the engine assertions
+  but Windows still briefly held the disposable vault directory during Go's
+  immediate temporary-directory cleanup
+- Change: the synchronized-folder test now retries removal for a bounded five
+  seconds and still fails if the handle is not released
+- Verification: ten consecutive configuration/scan lifecycle iterations passed
+
+### QR feature and initial protocol-test race
+
+- Revision: `da03fde`
+- iOS result: passed in 7 minutes 6 seconds
+- Verified: QR rendering, scanner UI compilation, camera privacy declaration,
+  parser behavior, upstream check-digit validation through the generated bridge,
+  all prior Simulator tests, framework inspection, and artifact upload
+- iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30697329481
+- Core result: failed in the two-process test because the helper requested its
+  first scan after configuration commit but before the folder service was ready
+- Core run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30697329485
+
+### Fully green correction
+
+- Revision: `81e3979`
+- Change: initial integration scans now use a bounded folder-readiness retry,
+  with a focused test proving transient failures are retried
+- Ubuntu core result: passed in 2 minutes 25 seconds with race detection and
+  77.4% statement coverage
+- Core run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30697607940
+- iOS result: passed in 6 minutes 37 seconds
+- iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30697607944

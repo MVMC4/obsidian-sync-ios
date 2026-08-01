@@ -46,8 +46,10 @@ peer on a physical iPad. A two-process integration test already verifies exact
 file contents in both directions over the real Syncthing protocol under Go's
 race detector. The app also records a bounded structured session history and can
 share a redacted diagnostics report without vault paths, device IDs, addresses,
-keys, or raw errors. A Simulator still cannot prove cross-app folder permission
-or physical-device networking behavior.
+keys, or raw errors. Pairing supports displaying and scanning Syncthing's plain
+device-ID QR codes with upstream checksum validation. A Simulator still cannot
+prove cross-app folder permission, camera capture, or physical-device networking
+behavior.
 
 See:
 
