@@ -15,6 +15,9 @@ Phase 0 — feasibility gates.
 - Native SwiftUI folder picker and persistent bookmark subsystem implemented.
 - Coordinated vault create/read/edit/rename/delete spike implemented.
 - Unsigned app build and unit tests passing on an iPadOS 18.5 Simulator.
+- Pinned `gomobile` build produces device and Simulator XCFramework slices.
+- Swift bridge creates a persistent device identity and starts/stops the real
+  embedded engine in an iPadOS Simulator test.
 
 ## Next concrete task
 

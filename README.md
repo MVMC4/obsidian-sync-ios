@@ -1,6 +1,7 @@
 # Obsidian Sync for iOS
 
 [![Core checks](https://github.com/MVMC4/obsidian-sync-ios/actions/workflows/core.yml/badge.svg)](https://github.com/MVMC4/obsidian-sync-ios/actions/workflows/core.yml)
+[![iOS checks](https://github.com/MVMC4/obsidian-sync-ios/actions/workflows/framework.yml/badge.svg)](https://github.com/MVMC4/obsidian-sync-ios/actions/workflows/framework.yml)
 
 A focused iPad/iPhone companion that joins an existing Syncthing cluster and
 syncs one Obsidian vault while the app is open.
@@ -35,9 +36,11 @@ pretend that iOS can provide a continuously running Syncthing daemon.
 
 The real Syncthing engine, peer and vault configuration, and manual scanning are
 implemented behind a narrow Go facade. A native SwiftUI vault-access spike now
-compiles and passes automated tests on an iPad Simulator. The next gating task is
-to run that spike against a disposable Obsidian vault on a physical iPad; a
-Simulator cannot prove cross-app folder permission behavior.
+compiles and passes automated tests on an iPad Simulator. The real Go core is
+cross-compiled as an XCFramework, linked into the Swift app, and exercised from
+Swift through a complete start/stop cycle. The next gating task is to run that
+spike against a disposable Obsidian vault on a physical iPad; a Simulator cannot
+prove cross-app folder permission behavior.
 
 See:
 

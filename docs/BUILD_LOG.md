@@ -115,3 +115,33 @@ will remain attached to their corresponding workflow runs.
 - Verified: project generation, unsigned app compilation, app installation into
   an iPad Pro 11-inch (M4) Simulator, and native unit tests
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692783055
+
+## 2026-08-01 — Embedded iOS framework
+
+### Initial tool-dependency failure
+
+- Revision: `5fd73db`
+- Result: failed before cross-compilation
+- Finding: Go 1.25 requires `gobind` to be retained as a `go.mod` tool
+  dependency for `gomobile bind`
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692983981
+
+### XCFramework build
+
+- Revision: `a1a34fa`
+- Host: GitHub-hosted macOS 15 runner with Xcode 16.4 and Go 1.25
+- Result: passed in 2 minutes 26 seconds
+- Verified: real Syncthing facade cross-compiled for iOS device and Simulator
+  slices; framework artifact uploaded for seven days
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30693062923
+
+### Swift bridge integration
+
+- The first linked compile at revision `f01313c` exposed that the generated C
+  factory requires an explicit `NSError` pointer; the framework itself built
+- Corrected revision: `31e0c17`
+- Result: passed in 3 minutes 56 seconds
+- Verified: XCFramework generation, Swift import and linking, unsigned app
+  compile, iPad Pro Simulator installation, native unit tests, persistent
+  Syncthing device identity, and engine start/stop through Swift
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30694852522

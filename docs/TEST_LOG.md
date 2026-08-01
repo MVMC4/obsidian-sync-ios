@@ -81,3 +81,15 @@ not exist.
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30692783055
 - Physical iPad folder-picker, relaunch, permission revocation, and Obsidian
   visibility tests: not run
+
+## 2026-08-01 — Swift-to-Go integration test
+
+- Revision: `31e0c17`
+- `SyncthingBridgeTests.testEmbeddedEngineCreatesIdentityStartsAndStops`: passed
+- Environment: iPad Pro 11-inch (M4) Simulator, iOS 18.5, Xcode 16.4
+- Covered: Objective-C binding import, app-private engine-state directory,
+  certificate/device identity generation, Swift-to-Go lifecycle calls, running
+  state, orderly shutdown, and stopped state
+- Full linked iOS workflow: passed in 3 minutes 56 seconds
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30694852522
+- Physical iPad engine lifecycle and networking: not run

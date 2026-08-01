@@ -20,6 +20,7 @@ Generate the Xcode project on the Mac:
 
 ```sh
 brew install xcodegen
+./scripts/build-core-xcframework.sh
 ./scripts/generate-xcode-project.sh
 open app/ObsidianSync.xcodeproj
 ```
@@ -28,7 +29,7 @@ Then:
 
 1. Clone the repository onto the Mac.
 2. Install the pinned Go toolchain and mobile build dependencies.
-3. Run the repository's core build command to generate the XCFramework.
+3. Run `./scripts/build-core-xcframework.sh` to generate the XCFramework.
 4. Open the generated Xcode project.
 5. In Xcode Settings, add the Apple Account used for development.
 6. Select the application target, open **Signing & Capabilities**, enable
