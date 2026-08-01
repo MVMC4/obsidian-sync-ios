@@ -49,3 +49,11 @@ will remain attached to their corresponding workflow runs.
   excludes Syncthing's generated web UI
 - Local race detector: not available because this Windows toolchain has CGO
   disabled; the Ubuntu CI job remains the race-enabled verification environment
+
+### Clean CI verification
+
+- Revision: `353e77e`
+- Result: passed in 2 minutes 15 seconds
+- Verified from a clean Ubuntu runner: formatting, vet, real engine lifecycle,
+  race detector, and coverage
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30691765411

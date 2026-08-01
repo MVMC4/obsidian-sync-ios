@@ -48,3 +48,6 @@ not exist.
   absent; all commands now consistently use the correct `noassets` build tag
 - Local `-race` attempt was not runnable because CGO is disabled on this Windows
   toolchain; race-enabled verification is delegated to GitHub Actions on Ubuntu
+- Remote `go test -tags noassets -race -coverprofile=coverage.out ./...`: passed
+- Remote statement coverage: 74.3%
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30691765411
