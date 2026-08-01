@@ -4,11 +4,14 @@ import Foundation
 
 enum SyncthingBridgeError: LocalizedError {
     case clientCreationFailed
+    case clientNotPrepared
 
     var errorDescription: String? {
         switch self {
         case .clientCreationFailed:
             return "The embedded Syncthing client could not be created."
+        case .clientNotPrepared:
+            return "Prepare the embedded Syncthing client before starting it."
         }
     }
 }
@@ -16,6 +19,7 @@ enum SyncthingBridgeError: LocalizedError {
 @MainActor
 final class SyncthingBridge: ObservableObject {
     @Published private(set) var deviceID: String?
+    @Published private(set) var state = "idle"
     @Published private(set) var lastError: String?
 
     private var client: MobilecoreClient?
@@ -42,9 +46,26 @@ final class SyncthingBridge: ObservableObject {
             }
             client = newClient
             deviceID = newClient.deviceID()
+            state = newClient.state()
             lastError = nil
         } catch {
             lastError = error.localizedDescription
         }
+    }
+
+    func start() throws {
+        guard let client else {
+            throw SyncthingBridgeError.clientNotPrepared
+        }
+        try client.start()
+        state = client.state()
+    }
+
+    func stop() throws {
+        guard let client else {
+            throw SyncthingBridgeError.clientNotPrepared
+        }
+        try client.stop()
+        state = client.state()
     }
 }
