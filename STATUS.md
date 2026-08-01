@@ -2,7 +2,7 @@
 
 ## Active phase
 
-Software implementation complete; physical-iPad feasibility gate pending.
+Software implementation complete; physical-iPad transfer gate in progress.
 
 ## Completed
 
@@ -37,10 +37,16 @@ Software implementation complete; physical-iPad feasibility gate pending.
   digits before settings are saved; camera denial retains manual entry.
 - The final activity-list identity correction is verified by Core checks run
   `30710848626` and iOS checks run `30710848621` at revision `69d9475`.
+- Windows sideloading, Apple device support, developer trust, and launch have
+  now been proven on a physical iPad with the unsigned device artifact.
+- First-run setup now distinguishes saved settings from a verified connection,
+  confirms vault and computer configuration, shows a guided checklist and
+  redacted session log, and retries transient folder-start scan failures. Core
+  run `30717953959` and iOS run `30717953961` pass at revision `67afc03`.
 
 ## Next concrete task
 
-Sign and run the completed SwiftUI device spike on a physical iPad so it:
+Install revision `67afc03` on the connected iPad and use a disposable vault to:
 
 1. lets the user select `On My iPad/Obsidian/<vault>`;
 2. persists and resolves the returned bookmark;
@@ -48,10 +54,9 @@ Sign and run the completed SwiftUI device spike on a physical iPad so it:
 4. repeats those operations after terminating and relaunching the app; and
 5. verifies that Obsidian sees the changes.
 
-The code for this spike, the first complete manual session path, and automated
-real-protocol transfer verification are complete. The remaining gate is signing
-and executing it on physical hardware against a disposable vault and a real
-Windows or Linux peer. Follow
+The app has already been signed, installed, trusted, and launched on physical
+hardware. The remaining gate is executing folder access and real two-way LAN
+transfer against a disposable vault and a Windows or Linux Syncthing peer. Follow
 `docs/PHYSICAL_IPAD_TEST_CHECKLIST.md` and record the exact environment/results.
 
 ## Exit condition

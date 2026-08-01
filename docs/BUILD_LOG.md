@@ -280,3 +280,20 @@ will remain attached to their corresponding workflow runs.
   the linked app compiled, and the native suite ran on an iPad Simulator
 - iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30710848621
 - Physical-device build and signing: not run; this remains the next gate
+
+## 2026-08-01 — First-run transparency device build
+
+- Revision: `67afc03`
+- Core checks: passed
+- iOS application compile and iPad Simulator tests: passed
+- Unsigned arm64 physical-device IPA packaging: passed
+- iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30717953961
+- Artifact: `ObsidianSync-unsigned-device-ipa`, retained through 2026-08-08
+- Downloaded artifact archive SHA-256:
+  `4f74e233c9417c482781669ce497d10505adb7714fb721f69c05d078095a2db1`
+- Extracted IPA SHA-256:
+  `6835399775576294e6bed6cd8f12efebabc6185dc01dff55f87cb70c7e95ca43`
+- Archive integrity and the packaged executable and `Info.plist` were verified
+  on Windows
+- An earlier build at `c4826d2` exposed one Swift closure compile error; the
+  corrected revision above completed the entire workflow

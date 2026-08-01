@@ -202,3 +202,22 @@ not exist.
 - iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30710848621
 - Physical iPad folder access, camera, LAN transfer, Obsidian visibility, and
   signing: not run and not represented by the Simulator result
+
+## 2026-08-01 — First-run transparency and scan-readiness regression
+
+- Revision: `67afc03`
+- Ubuntu Core checks: passed, including formatting, vet, unit/integration tests,
+  coverage, and race detection
+- Core run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30717953959
+- macOS iOS checks: passed; the linked application compiled and the complete
+  native Swift suite ran on an iPad Simulator
+- iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30717953961
+- Added coverage proving that a newly configured folder's transient scan
+  readiness failures are retried before the session is failed
+- Added recovery coverage proving that an unreachable peer remains actionable
+  after the session enters its terminal failure state
+- Verified in the compiled UI: saved settings are not presented as a verified
+  pairing, setup actions confirm their result, and redacted session events are
+  readable in Settings
+- Physical LAN transfer and Obsidian visibility remain to be run with the new
+  build and a disposable vault
