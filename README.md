@@ -1,5 +1,7 @@
 # Obsidian Sync for iOS
 
+[![Core checks](https://github.com/MVMC4/obsidian-sync-ios/actions/workflows/core.yml/badge.svg)](https://github.com/MVMC4/obsidian-sync-ios/actions/workflows/core.yml)
+
 A focused iPad/iPhone companion that joins an existing Syncthing cluster and
 syncs one Obsidian vault while the app is open.
 
