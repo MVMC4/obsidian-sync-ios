@@ -17,5 +17,13 @@ final class SyncthingBridgeTests: XCTestCase {
 
         try bridge.stop()
         XCTAssertEqual(bridge.state, "stopped")
+
+        let originalDeviceID = bridge.deviceID
+        try bridge.start()
+        XCTAssertEqual(bridge.state, "running")
+        XCTAssertEqual(bridge.deviceID, originalDeviceID)
+
+        try bridge.stop()
+        XCTAssertEqual(bridge.state, "stopped")
     }
 }

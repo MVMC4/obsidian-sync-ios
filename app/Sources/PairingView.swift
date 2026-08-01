@@ -43,6 +43,9 @@ struct PairingView: View {
                     Text("Add this device ID to Syncthing on your computer as a remote device.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                    Text("On the computer, share the existing vault folder with this iPad. Keep the computer awake and Syncthing running during the first session.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section("Existing Syncthing device") {

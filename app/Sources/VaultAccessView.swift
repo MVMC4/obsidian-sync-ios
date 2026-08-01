@@ -33,6 +33,7 @@ struct VaultAccessView: View {
                     hero
                     syncCard
                     statusCard
+                    conflictCard
                     setupGrid
                     diagnosticsCard
                 }
@@ -176,6 +177,31 @@ struct VaultAccessView: View {
         }
     }
 
+    @ViewBuilder
+    private var conflictCard: some View {
+        if !session.conflicts.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Conflict copies need review", systemImage: "exclamationmark.triangle.fill")
+                    .font(.headline)
+                    .foregroundStyle(.orange)
+                Text("Syncthing preserved competing edits. Open these files in the vault and merge the version you want to keep.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                ForEach(session.conflicts.prefix(5), id: \.self) { path in
+                    Text(path)
+                        .font(.caption.monospaced())
+                        .lineLimit(2)
+                }
+                if session.conflicts.count > 5 {
+                    Text("And \(session.conflicts.count - 5) more…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .cardStyle()
+        }
+    }
+
     private var setupGrid: some View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .top, spacing: 16) {
@@ -262,6 +288,7 @@ struct VaultAccessView: View {
         case .verifyingCompletion: return "Verifying both devices"
         case .stoppingEngine: return "Finishing safely"
         case .complete: return "Vault is up to date"
+        case .completeWithConflicts: return "Synced with conflicts"
         case .failed: return "Sync needs attention"
         case .cancelled: return "Sync stopped"
         }
@@ -271,6 +298,7 @@ struct VaultAccessView: View {
         switch session.phase {
         case .idle: return "Manual foreground sync"
         case .complete: return "The engine stopped and vault access was released."
+        case .completeWithConflicts: return "The engine stopped safely. Review the preserved conflict copies below."
         case .failed: return "Review the message below and try again."
         case .cancelled: return "No sync process is running."
         default: return "Keep this app open until the session finishes."
@@ -280,6 +308,7 @@ struct VaultAccessView: View {
     private var phaseIcon: String {
         switch session.phase {
         case .complete: return "checkmark.circle.fill"
+        case .completeWithConflicts: return "exclamationmark.triangle.fill"
         case .failed: return "exclamationmark.triangle.fill"
         case .cancelled: return "stop.circle.fill"
         case .idle: return "circle.dotted"
@@ -290,6 +319,7 @@ struct VaultAccessView: View {
     private var phaseColor: Color {
         switch session.phase {
         case .complete: return .green
+        case .completeWithConflicts: return .orange
         case .failed: return .red
         case .cancelled: return .orange
         default: return .indigo

@@ -12,6 +12,7 @@ enum SyncSessionPhase: String, Equatable {
     case verifyingCompletion
     case stoppingEngine
     case complete
+    case completeWithConflicts
     case failed
     case cancelled
 
@@ -52,23 +53,27 @@ final class SyncSessionController: ObservableObject {
 
     @Published private(set) var phase: SyncSessionPhase = .idle
     @Published private(set) var status: FolderSyncStatus?
+    @Published private(set) var conflicts: [String] = []
     @Published private(set) var lastError: String?
 
     private let engine: any SyncEngineControlling
     private let vaultAccess: any VaultAccessProviding
     private let policy: SyncSessionPolicy
     private let sleeper: Sleeper
+    private let conflictScanner: any VaultConflictScanning
     private var task: Task<Void, Never>?
 
     init(
         engine: any SyncEngineControlling,
         vaultAccess: any VaultAccessProviding,
         policy: SyncSessionPolicy = SyncSessionPolicy(),
+        conflictScanner: any VaultConflictScanning = VaultConflictScanner(),
         sleeper: @escaping Sleeper = { try await Task.sleep(nanoseconds: $0) }
     ) {
         self.engine = engine
         self.vaultAccess = vaultAccess
         self.policy = policy
+        self.conflictScanner = conflictScanner
         self.sleeper = sleeper
     }
 
@@ -94,6 +99,7 @@ final class SyncSessionController: ObservableObject {
         var accessSession: (any VaultAccessSessionProtocol)?
         var engineStarted = false
         status = nil
+        conflicts = []
         lastError = nil
 
         do {
@@ -129,7 +135,7 @@ final class SyncSessionController: ObservableObject {
                     phase = .verifyingCompletion
                     if stableSamples >= policy.requiredStableSamples {
                         try finish(engineStarted: &engineStarted, accessSession: &accessSession)
-                        phase = .complete
+                        phase = conflicts.isEmpty ? .complete : .completeWithConflicts
                         task = nil
                         return
                     }
@@ -173,6 +179,9 @@ final class SyncSessionController: ObservableObject {
         if engineStarted {
             try engine.stop()
             engineStarted = false
+        }
+        if let vaultURL = accessSession?.url {
+            conflicts = try conflictScanner.conflictPaths(in: vaultURL)
         }
         accessSession?.close()
         accessSession = nil

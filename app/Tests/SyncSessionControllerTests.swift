@@ -73,6 +73,14 @@ private final class FakeVaultSession: VaultAccessSessionProtocol {
     }
 }
 
+private struct FakeConflictScanner: VaultConflictScanning {
+    var paths: [String] = []
+
+    func conflictPaths(in vaultURL: URL) throws -> [String] {
+        paths
+    }
+}
+
 @MainActor
 private final class FakeVaultAccess: VaultAccessProviding {
     let session = FakeVaultSession()
@@ -104,6 +112,7 @@ final class SyncSessionControllerTests: XCTestCase {
             engine: engine,
             vaultAccess: vault,
             policy: SyncSessionPolicy(maximumPolls: 4, pollIntervalNanoseconds: 0, requiredStableSamples: 2),
+            conflictScanner: FakeConflictScanner(),
             sleeper: { _ in }
         )
 
@@ -113,6 +122,16 @@ final class SyncSessionControllerTests: XCTestCase {
         XCTAssertEqual(engine.calls.last, "stop")
         XCTAssertEqual(engine.calls.filter { $0 == "status" }.count, 4)
         XCTAssertEqual(vault.session.closeCalls, 1)
+
+        engine.statuses = [
+            FakeSyncEngine.status(connected: true, upToDate: true),
+            FakeSyncEngine.status(connected: true, upToDate: true),
+        ]
+        await controller.run(profile: profile)
+
+        XCTAssertEqual(controller.phase, .complete)
+        XCTAssertEqual(engine.calls.filter { $0 == "stop" }.count, 2)
+        XCTAssertEqual(vault.session.closeCalls, 2)
     }
 
     @MainActor
@@ -126,6 +145,7 @@ final class SyncSessionControllerTests: XCTestCase {
         let controller = SyncSessionController(
             engine: engine,
             vaultAccess: vault,
+            conflictScanner: FakeConflictScanner(),
             sleeper: { _ in }
         )
 
@@ -146,6 +166,7 @@ final class SyncSessionControllerTests: XCTestCase {
             engine: engine,
             vaultAccess: vault,
             policy: SyncSessionPolicy(maximumPolls: 1, pollIntervalNanoseconds: 0, requiredStableSamples: 2),
+            conflictScanner: FakeConflictScanner(),
             sleeper: { _ in }
         )
 
@@ -153,6 +174,29 @@ final class SyncSessionControllerTests: XCTestCase {
 
         XCTAssertEqual(controller.phase, .failed)
         XCTAssertEqual(controller.lastError, SyncSessionError.timedOut.localizedDescription)
+        XCTAssertEqual(vault.session.closeCalls, 1)
+    }
+
+    @MainActor
+    func testConflictCopiesProduceAttentionState() async {
+        let engine = FakeSyncEngine()
+        engine.statuses = [
+            FakeSyncEngine.status(connected: true, upToDate: true),
+            FakeSyncEngine.status(connected: true, upToDate: true),
+        ]
+        let vault = FakeVaultAccess()
+        let controller = SyncSessionController(
+            engine: engine,
+            vaultAccess: vault,
+            policy: SyncSessionPolicy(maximumPolls: 2, pollIntervalNanoseconds: 0, requiredStableSamples: 2),
+            conflictScanner: FakeConflictScanner(paths: ["Notes/idea.sync-conflict-20260801.md"]),
+            sleeper: { _ in }
+        )
+
+        await controller.run(profile: profile)
+
+        XCTAssertEqual(controller.phase, .completeWithConflicts)
+        XCTAssertEqual(controller.conflicts, ["Notes/idea.sync-conflict-20260801.md"])
         XCTAssertEqual(vault.session.closeCalls, 1)
     }
 }

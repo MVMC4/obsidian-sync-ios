@@ -24,6 +24,8 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Vault Sync connects directly to your Syncthing devices to synchronize the selected vault.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
