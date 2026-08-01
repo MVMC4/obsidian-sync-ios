@@ -184,3 +184,25 @@ will remain attached to their corresponding workflow runs.
   conflict scanning and result capping, Simulator installation, all prior tests,
   and XCFramework artifact upload
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30695851603
+
+## 2026-08-01 — Bidirectional protocol transfer verification
+
+### Core integration
+
+- Revision: `9964828`
+- Host: GitHub-hosted Ubuntu runner
+- Result: passed in 1 minute 59 seconds
+- Verified: two independent embedded Syncthing processes, isolated identities
+  and state, explicit TCP pairing, exact-content transfer in both directions,
+  orderly cleanup, race detector, and 77.0% statement coverage
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696198329
+
+### iOS regression
+
+- Revision: `9964828`
+- Host: GitHub-hosted macOS runner
+- Result: passed
+- Verified: XCFramework generation, Xcode project generation, linked app
+  compilation, complete native test suite on an iPad Simulator, framework slice
+  inspection, and artifact upload
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696198311

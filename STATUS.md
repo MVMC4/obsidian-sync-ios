@@ -26,6 +26,9 @@ Phase 0 — feasibility gates.
   sync start/stop, two-sided progress, and permission diagnostics.
 - Local Network permission declaration, repeat-session identity verification,
   and bounded conflict-copy reporting implemented and Simulator-tested.
+- A two-process integration test now proves exact-content transfer in both
+  directions between independent embedded Syncthing nodes over TCP. The test
+  passes on Ubuntu with the race detector enabled.
 
 ## Next concrete task
 
@@ -37,9 +40,10 @@ Build a tiny SwiftUI device spike on macOS that:
 4. repeats those operations after terminating and relaunching the app; and
 5. verifies that Obsidian sees the changes.
 
-The code for this spike and the first complete manual session path is complete.
-The remaining gate is signing and executing it on physical hardware against a
-disposable vault and a real Windows or Linux peer. Follow
+The code for this spike, the first complete manual session path, and automated
+real-protocol transfer verification are complete. The remaining gate is signing
+and executing it on physical hardware against a disposable vault and a real
+Windows or Linux peer. Follow
 `docs/PHYSICAL_IPAD_TEST_CHECKLIST.md` and record the exact environment/results.
 
 ## Exit condition

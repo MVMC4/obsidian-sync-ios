@@ -94,6 +94,15 @@ STUN, and NAT traversal remain disabled until their shutdown is race-free in the
 embedded lifecycle. Configuration and event services are explicitly joined
 before the app releases engine state or vault access.
 
+## Protocol integration test topology
+
+The automated transfer test runs two independent processes, each with its own
+certificate, device identity, configuration, database, listener, and vault. The
+nodes use explicit loopback TCP addresses with discovery and relays disabled so
+the test is deterministic. It verifies exact file contents from the parent node
+to the helper node, then creates a different file on the helper and verifies it
+at the parent. Production defaults remain unchanged.
+
 ## Session completion contract
 
 Swift polls a versioned JSON snapshot instead of importing Syncthing model

@@ -122,3 +122,25 @@ not exist.
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30695851603
 - Local Network permission prompt and actual LAN traffic: not testable in this
   automation and still require the physical checklist
+
+## 2026-08-01 — Real bidirectional protocol transfer
+
+- Revision: `9964828`
+- `TestBidirectionalSyncthingTransfer`: passed on Ubuntu under the race detector
+- Topology: parent test process plus a helper test process, with independent
+  certificates, device IDs, configuration directories, databases, listeners,
+  and vault directories
+- Outbound verification: the helper received `from-ipad.md` with exact expected
+  contents
+- Inbound verification: the parent received `from-desktop.md` with exact
+  expected contents
+- Determinism: explicit loopback TCP addresses; discovery, relays, and NAT
+  traversal disabled only for the integration nodes
+- `go test -tags noassets -race -coverprofile=coverage.out ./...`: passed
+- Statement coverage: 77.0%
+- Core run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696198329
+- Full linked iOS Simulator regression: passed
+- iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696198311
+- Still not proven by automation: security-scoped access to Obsidian's physical
+  iPad folder, the Local Network permission prompt, real Wi-Fi conditions,
+  background interruption, and Obsidian visibility after transfer
