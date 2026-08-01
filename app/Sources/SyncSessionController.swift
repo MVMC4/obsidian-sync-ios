@@ -2,41 +2,25 @@ import Combine
 import Foundation
 
 enum SyncSessionPhase: String, Equatable {
-    case idle
-    case acquiringVaultAccess
-    case startingEngine
-    case configuring
-    case scanning
-    case waitingForPeer
-    case synchronizing
-    case verifyingCompletion
-    case stoppingEngine
-    case complete
-    case completeWithConflicts
-    case failed
-    case cancelled
-
+    case idle, acquiringVaultAccess, startingEngine, configuring, scanning,
+         waitingForPeer, synchronizing, verifyingCompletion, stoppingEngine,
+         complete, completeWithConflicts, failed, cancelled
     var isActive: Bool {
         switch self {
         case .acquiringVaultAccess, .startingEngine, .configuring, .scanning,
              .waitingForPeer, .synchronizing, .verifyingCompletion, .stoppingEngine:
             return true
-        default:
-            return false
+        default: return false
         }
     }
 }
 
 enum SyncSessionError: LocalizedError {
-    case alreadyRunning
-    case timedOut
-
+    case alreadyRunning, timedOut
     var errorDescription: String? {
         switch self {
-        case .alreadyRunning:
-            return "A sync session is already running."
-        case .timedOut:
-            return "The peer did not reach a verified up-to-date state before the session timed out."
+        case .alreadyRunning: return "A sync session is already running."
+        case .timedOut: return "The peer did not reach a verified up-to-date state before the session timed out."
         }
     }
 }
@@ -50,10 +34,10 @@ struct SyncSessionPolicy {
 @MainActor
 final class SyncSessionController: ObservableObject {
     typealias Sleeper = @Sendable (UInt64) async throws -> Void
-
     @Published private(set) var phase: SyncSessionPhase = .idle
     @Published private(set) var status: FolderSyncStatus?
     @Published private(set) var conflicts: [String] = []
+    @Published private(set) var activity: [SyncActivityItem] = []
     @Published private(set) var lastError: String?
 
     private let engine: any SyncEngineControlling
@@ -62,6 +46,7 @@ final class SyncSessionController: ObservableObject {
     private let sleeper: Sleeper
     private let conflictScanner: any VaultConflictScanning
     private let diagnostics: any DiagnosticsRecording
+    private let activityDirectory: URL
     private var task: Task<Void, Never>?
 
     init(
@@ -70,6 +55,9 @@ final class SyncSessionController: ObservableObject {
         policy: SyncSessionPolicy = SyncSessionPolicy(),
         conflictScanner: any VaultConflictScanning = VaultConflictScanner(),
         diagnostics: (any DiagnosticsRecording)? = nil,
+        activityDirectory: URL = FileManager.default.urls(
+            for: .applicationSupportDirectory, in: .userDomainMask
+        )[0].appendingPathComponent("VaultSync", isDirectory: true),
         sleeper: @escaping Sleeper = { try await Task.sleep(nanoseconds: $0) }
     ) {
         self.engine = engine
@@ -77,53 +65,43 @@ final class SyncSessionController: ObservableObject {
         self.policy = policy
         self.conflictScanner = conflictScanner
         self.diagnostics = diagnostics ?? NoOpDiagnosticsRecorder()
+        self.activityDirectory = activityDirectory
         self.sleeper = sleeper
+        self.activity = SyncActivityStore.load(directory: activityDirectory)
     }
 
     func start(profile: SyncProfile) throws {
-        guard !phase.isActive else {
-            throw SyncSessionError.alreadyRunning
-        }
-        task = Task { [weak self] in
-            await self?.run(profile: profile)
-        }
+        guard !phase.isActive else { throw SyncSessionError.alreadyRunning }
+        task = Task { [weak self] in await self?.run(profile: profile) }
     }
 
-    func cancel() {
-        task?.cancel()
-    }
+    func cancel() { task?.cancel() }
 
     func run(profile: SyncProfile) async {
         guard !phase.isActive else {
             lastError = SyncSessionError.alreadyRunning.localizedDescription
             return
         }
-
         var accessSession: (any VaultAccessSessionProtocol)?
         var engineStarted = false
         status = nil
         conflicts = []
         lastError = nil
-
         do {
             let validatedProfile = try profile.validated()
             transition(to: .acquiringVaultAccess)
             accessSession = try vaultAccess.openSession()
             try Task.checkCancellation()
-
             transition(to: .startingEngine)
             try engine.prepare()
             try engine.start()
             engineStarted = true
             try Task.checkCancellation()
-
             transition(to: .configuring)
             try engine.configurePeer(validatedProfile)
             try engine.configureFolder(validatedProfile, vaultPath: accessSession!.url.path)
-
             transition(to: .scanning)
             try engine.scan(folderID: validatedProfile.folderID)
-
             var stableSamples = 0
             for poll in 0..<policy.maximumPolls {
                 try Task.checkCancellation()
@@ -132,19 +110,17 @@ final class SyncSessionController: ObservableObject {
                     peerDeviceID: validatedProfile.peerDeviceID
                 )
                 status = current
-
+                refreshActivity(folderID: validatedProfile.folderID)
                 if current.upToDate {
                     stableSamples += 1
                     transition(to: .verifyingCompletion)
                     if stableSamples >= policy.requiredStableSamples {
+                        refreshActivity(folderID: validatedProfile.folderID)
                         try finish(engineStarted: &engineStarted, accessSession: &accessSession)
-                        let completedPhase: SyncSessionPhase = conflicts.isEmpty
-                            ? .complete
-                            : .completeWithConflicts
-                        transition(
-                            to: completedPhase,
-                            outcome: conflicts.isEmpty ? .success : .successWithConflicts
-                        )
+                        let completedPhase: SyncSessionPhase = conflicts.isEmpty ? .complete : .completeWithConflicts
+                        transition(to: completedPhase,
+                                   outcome: conflicts.isEmpty ? .success : .successWithConflicts)
+                        persistActivity()
                         task = nil
                         return
                     }
@@ -152,7 +128,6 @@ final class SyncSessionController: ObservableObject {
                     stableSamples = 0
                     transition(to: phaseForStatus(current))
                 }
-
                 if poll + 1 < policy.maximumPolls {
                     try await sleeper(policy.pollIntervalNanoseconds)
                 }
@@ -162,22 +137,29 @@ final class SyncSessionController: ObservableObject {
             cleanup(engineStarted: &engineStarted, accessSession: &accessSession)
             transition(to: .cancelled, outcome: .cancelled)
             lastError = nil
+            persistActivity()
         } catch {
             let outcome = diagnosticOutcome(for: error, phase: phase)
             cleanup(engineStarted: &engineStarted, accessSession: &accessSession)
             transition(to: .failed, outcome: outcome)
             lastError = error.localizedDescription
+            persistActivity()
         }
         task = nil
     }
 
+    private func refreshActivity(folderID: String) {
+        guard let snapshot = try? engine.recentActivity(folderID: folderID) else { return }
+        activity = SyncActivityStore.merge(session: snapshot.items, persisted: activity)
+    }
+
+    private func persistActivity() {
+        SyncActivityStore.save(activity, directory: activityDirectory)
+    }
+
     private func phaseForStatus(_ status: FolderSyncStatus) -> SyncSessionPhase {
-        if !status.peerConnected {
-            return .waitingForPeer
-        }
-        if status.folderState.localizedCaseInsensitiveContains("scan") {
-            return .scanning
-        }
+        if !status.peerConnected { return .waitingForPeer }
+        if status.folderState.localizedCaseInsensitiveContains("scan") { return .scanning }
         return .synchronizing
     }
 
@@ -209,28 +191,16 @@ final class SyncSessionController: ObservableObject {
         accessSession = nil
     }
 
-    private func transition(
-        to newPhase: SyncSessionPhase,
-        outcome: DiagnosticOutcome? = nil
-    ) {
+    private func transition(to newPhase: SyncSessionPhase, outcome: DiagnosticOutcome? = nil) {
         guard phase != newPhase || outcome != nil else { return }
         phase = newPhase
         diagnostics.record(phase: newPhase, status: status, outcome: outcome)
     }
 
-    private func diagnosticOutcome(
-        for error: Error,
-        phase: SyncSessionPhase
-    ) -> DiagnosticOutcome {
-        if error is SyncSessionError {
-            return .timeout
-        }
-        if error is VaultAccessError || phase == .acquiringVaultAccess {
-            return .vaultAccessFailure
-        }
-        if error is SyncProfileError || phase == .configuring {
-            return .configurationFailure
-        }
+    private func diagnosticOutcome(for error: Error, phase: SyncSessionPhase) -> DiagnosticOutcome {
+        if error is SyncSessionError { return .timeout }
+        if error is VaultAccessError || phase == .acquiringVaultAccess { return .vaultAccessFailure }
+        if error is SyncProfileError || phase == .configuring { return .configurationFailure }
         return .engineFailure
     }
 }

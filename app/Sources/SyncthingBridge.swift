@@ -5,13 +5,10 @@ import Foundation
 enum SyncthingBridgeError: LocalizedError {
     case clientCreationFailed
     case clientNotPrepared
-
     var errorDescription: String? {
         switch self {
-        case .clientCreationFailed:
-            return "The embedded Syncthing client could not be created."
-        case .clientNotPrepared:
-            return "Prepare the embedded Syncthing client before starting it."
+        case .clientCreationFailed: return "The embedded Syncthing client could not be created."
+        case .clientNotPrepared: return "Prepare the embedded Syncthing client before starting it."
         }
     }
 }
@@ -21,13 +18,13 @@ protocol SyncEngineControlling: AnyObject {
     var deviceID: String? { get }
     var state: String { get }
     var lastError: String? { get }
-
     func prepare() throws
     func start() throws
     func configurePeer(_ profile: SyncProfile) throws
     func configureFolder(_ profile: SyncProfile, vaultPath: String) throws
     func scan(folderID: String) throws
     func folderStatus(folderID: String, peerDeviceID: String) throws -> FolderSyncStatus
+    func recentActivity(folderID: String) throws -> SyncActivitySnapshot
     func stop() throws
 }
 
@@ -54,29 +51,21 @@ final class SyncthingBridge: ObservableObject, SyncEngineControlling {
     @Published private(set) var deviceID: String?
     @Published private(set) var state = "idle"
     @Published private(set) var lastError: String?
-
     private var client: MobilecoreClient?
 
     func prepare() throws {
-        if client != nil, state != "stopped", state != "failed" {
-            return
-        }
-
+        if client != nil, state != "stopped", state != "failed" { return }
         client = nil
-
         do {
             let stateDirectory = FileManager.default.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
+                for: .applicationSupportDirectory, in: .userDomainMask
             )[0]
-                .appendingPathComponent("VaultSync", isDirectory: true)
-                .appendingPathComponent("Engine", isDirectory: true)
+            .appendingPathComponent("VaultSync", isDirectory: true)
+            .appendingPathComponent("Engine", isDirectory: true)
             try FileManager.default.createDirectory(
-                at: stateDirectory,
-                withIntermediateDirectories: true,
+                at: stateDirectory, withIntermediateDirectories: true,
                 attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
             )
-
             var creationError: NSError?
             guard let newClient = MobilecoreNewClient(stateDirectory.path, &creationError) else {
                 throw creationError ?? SyncthingBridgeError.clientCreationFailed
@@ -93,67 +82,49 @@ final class SyncthingBridge: ObservableObject, SyncEngineControlling {
 
     func start() throws {
         try prepare()
-        guard let client else {
-            throw SyncthingBridgeError.clientNotPrepared
-        }
+        guard let client else { throw SyncthingBridgeError.clientNotPrepared }
         try client.start()
         state = client.state()
     }
 
     func configurePeer(_ profile: SyncProfile) throws {
-        guard let client else {
-            throw SyncthingBridgeError.clientNotPrepared
-        }
+        guard let client else { throw SyncthingBridgeError.clientNotPrepared }
         let addressesData = try JSONEncoder().encode(profile.addresses)
         guard let addressesJSON = String(data: addressesData, encoding: .utf8) else {
             throw CocoaError(.fileWriteInapplicableStringEncoding)
         }
-        try client.configurePeer(
-            profile.peerDeviceID,
-            name: profile.peerName,
-            addressesJSON: addressesJSON
-        )
+        try client.configurePeer(profile.peerDeviceID, name: profile.peerName, addressesJSON: addressesJSON)
     }
 
     func configureFolder(_ profile: SyncProfile, vaultPath: String) throws {
-        guard let client else {
-            throw SyncthingBridgeError.clientNotPrepared
-        }
-        try client.configureFolder(
-            profile.folderID,
-            folderPath: vaultPath,
-            label: profile.folderLabel,
-            peerDeviceID: profile.peerDeviceID
-        )
+        guard let client else { throw SyncthingBridgeError.clientNotPrepared }
+        try client.configureFolder(profile.folderID, folderPath: vaultPath,
+                                   label: profile.folderLabel, peerDeviceID: profile.peerDeviceID)
     }
 
     func scan(folderID: String) throws {
-        guard let client else {
-            throw SyncthingBridgeError.clientNotPrepared
-        }
+        guard let client else { throw SyncthingBridgeError.clientNotPrepared }
         try client.scan(folderID)
     }
 
     func folderStatus(folderID: String, peerDeviceID: String) throws -> FolderSyncStatus {
-        guard let client else {
-            throw SyncthingBridgeError.clientNotPrepared
-        }
+        guard let client else { throw SyncthingBridgeError.clientNotPrepared }
         var statusError: NSError?
-        let json = client.folderStatusJSON(
-            folderID,
-            peerDeviceID: peerDeviceID,
-            error: &statusError
-        )
-        if let statusError {
-            throw statusError
-        }
+        let json = client.folderStatusJSON(folderID, peerDeviceID: peerDeviceID, error: &statusError)
+        if let statusError { throw statusError }
         return try JSONDecoder().decode(FolderSyncStatus.self, from: Data(json.utf8))
     }
 
+    func recentActivity(folderID: String) throws -> SyncActivitySnapshot {
+        guard let client else { throw SyncthingBridgeError.clientNotPrepared }
+        var activityError: NSError?
+        let json = client.recentActivityJSON(folderID, error: &activityError)
+        if let activityError { throw activityError }
+        return try JSONDecoder().decode(SyncActivitySnapshot.self, from: Data(json.utf8))
+    }
+
     func stop() throws {
-        guard let client else {
-            throw SyncthingBridgeError.clientNotPrepared
-        }
+        guard let client else { throw SyncthingBridgeError.clientNotPrepared }
         try client.stop()
         state = client.state()
     }
@@ -161,9 +132,7 @@ final class SyncthingBridge: ObservableObject, SyncEngineControlling {
     nonisolated func normalizeDeviceID(_ value: String) throws -> String {
         var normalizationError: NSError?
         let normalized = MobilecoreNormalizeDeviceID(value, &normalizationError)
-        if let normalizationError {
-            throw normalizationError
-        }
+        if let normalizationError { throw normalizationError }
         return normalized
     }
 }
