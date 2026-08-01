@@ -25,3 +25,12 @@ will remain attached to their corresponding workflow runs.
 - Note: an initial coverage command was run from the repository root and failed
   because the Go module is under `core/`; it was rerun from the correct module
   directory and passed
+
+## 2026-08-01 — Initial GitHub Actions verification
+
+- Host: GitHub-hosted Ubuntu runner
+- Revision: `370d924`
+- Workflow: `Core checks`
+- Result: passed in 28 seconds
+- Verified: checkout, Go setup, formatting, vet, race-enabled tests, and coverage
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30691040646

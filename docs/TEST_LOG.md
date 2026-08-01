@@ -26,3 +26,13 @@ not exist.
   missing engine handling, and versioned primitive JSON status
 - Not covered yet: real Syncthing lifecycle, filesystem/database state,
   gomobile bindings, Swift integration, and physical-device behavior
+
+## 2026-08-01 — Initial remote CI
+
+- Revision: `370d924`
+- GitHub Actions `Core checks`: passed
+- `gofmt` check: passed
+- `go vet ./...`: passed
+- `go test -race -coverprofile=coverage.out ./...`: passed
+- Statement coverage: 74.2%
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30691040646
