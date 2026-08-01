@@ -29,6 +29,9 @@ Phase 0 — feasibility gates.
 - A two-process integration test now proves exact-content transfer in both
   directions between independent embedded Syncthing nodes over TCP. The test
   passes on Ubuntu with the race detector enabled.
+- Persistent, bounded session diagnostics and a shareable redacted JSON report
+  are implemented and Simulator-tested. Reports exclude vault names and paths,
+  device IDs, peer labels, folder IDs, addresses, keys, and raw errors.
 
 ## Next concrete task
 

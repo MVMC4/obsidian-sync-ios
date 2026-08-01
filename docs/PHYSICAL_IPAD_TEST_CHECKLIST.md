@@ -92,6 +92,18 @@ real notes collection for these tests.
 - [ ] iPad restart between sessions.
 - [ ] Desktop Syncthing restart between sessions.
 
+## Diagnostics export
+
+- [ ] After a completed session, prepare and share the redacted diagnostics
+      report to Files or Mail.
+- [ ] Confirm the JSON opens and contains the app/iPadOS versions, terminal
+      phase, connection/progress counts, conflict count, and recent phases.
+- [ ] Search the exported file for the actual vault name and path, both device
+      IDs, peer name, folder ID and label, configured IP address, and displayed
+      raw error text; confirm none are present.
+- [ ] Confirm no certificate, private key, or Syncthing database content appears
+      in the report.
+
 ## Exit criteria
 
 The physical gate passes only if:

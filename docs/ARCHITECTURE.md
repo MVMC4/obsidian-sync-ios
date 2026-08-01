@@ -72,6 +72,17 @@ These files are private app state and are excluded from the vault.
 
 No device identity, index database, or private key may be written here.
 
+## Diagnostics boundary
+
+The Swift session controller records a bounded history of structured phases,
+coarse outcomes, connection state, completion percentages, and outstanding item
+counts. It never records arbitrary upstream error text. The shareable JSON
+report derives only booleans and a dynamic-versus-custom address mode from the
+saved profile; it does not serialize the profile itself. Vault names and paths,
+local and peer device IDs, peer labels, folder IDs, network addresses, keys, and
+raw errors are excluded. Unknown engine, folder, and event state strings are
+normalized before export.
+
 ## Security model
 
 - Syncthing provides mutually authenticated, encrypted peer transport.

@@ -206,3 +206,26 @@ will remain attached to their corresponding workflow runs.
   compilation, complete native test suite on an iPad Simulator, framework slice
   inspection, and artifact upload
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696198311
+
+## 2026-08-01 — Redacted diagnostics export
+
+### Initial actor-isolation finding
+
+- Revision: `8631477`
+- Result: the XCFramework built, but Swift compilation failed
+- Finding: a main-actor-isolated no-op recorder was constructed in a default
+  argument, which Swift evaluates outside the initializer's actor context
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696657930
+
+### Corrected native build
+
+- Revision: `42def5c`
+- Result: passed in 4 minutes 21 seconds
+- Change: defer fallback recorder construction to the main-actor-isolated
+  initializer body
+- Verified: XCFramework generation, generated Xcode project, linked app compile,
+  all native tests on an iPad Simulator, framework inspection, and artifact
+  upload
+- iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696817304
+- Ubuntu core checks: passed in 2 minutes 29 seconds
+- Core run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696817294

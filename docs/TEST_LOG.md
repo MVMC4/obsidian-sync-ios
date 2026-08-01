@@ -144,3 +144,22 @@ not exist.
 - Still not proven by automation: security-scoped access to Obsidian's physical
   iPad folder, the Local Network permission prompt, real Wi-Fi conditions,
   background interruption, and Obsidian visibility after transfer
+
+## 2026-08-01 — Structured diagnostics and redaction tests
+
+- Revision: `42def5c`
+- `DiagnosticsTests.testEventStoreRoundTripsAndKeepsNewestEntries`: passed
+- `DiagnosticsTests.testReportIncludesUsefulStateWithoutSensitiveConfiguration`:
+  passed
+- `DiagnosticsTests.testRecorderPersistsOnlyStructuredEvents`: passed
+- `DiagnosticsTests.testExportWriterProducesExpectedJSONFile`: passed
+- Session-controller success and configuration-failure tests now also verify
+  the recorded terminal outcome
+- Covered: bounded persistent event history, ISO-8601 round trip, exact export
+  filename/content, useful connection/progress/conflict fields, unknown-state
+  normalization, and omission of device IDs, peer names, addresses, folder IDs,
+  labels, and filesystem paths
+- Full iPad Simulator suite: passed
+- iOS run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30696817304
+- Physical share-sheet behavior and inspection of a report produced after a
+  real device session: not run; added to the physical verification gate

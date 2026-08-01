@@ -200,8 +200,9 @@ two-device and background-transition matrix remains pending on physical hardware
 
 Implementation status: the functional sync dashboard, vault picker, manual
 pairing/settings sheet, live progress, result states, and vault diagnostics are
-implemented. QR pairing, recent-file details, diagnostics export, and final
-visual styling remain pending.
+implemented. Persistent structured session diagnostics and redacted JSON export
+are also implemented and Simulator-tested. QR pairing, recent-file details, and
+final visual styling remain pending.
 
 ### UX safety
 
