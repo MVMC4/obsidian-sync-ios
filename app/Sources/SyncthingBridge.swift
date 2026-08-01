@@ -36,8 +36,9 @@ final class SyncthingBridge: ObservableObject {
                 attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
             )
 
-            guard let newClient = try MobilecoreNewClient(stateDirectory.path) else {
-                throw SyncthingBridgeError.clientCreationFailed
+            var creationError: NSError?
+            guard let newClient = MobilecoreNewClient(stateDirectory.path, &creationError) else {
+                throw creationError ?? SyncthingBridgeError.clientCreationFailed
             }
             client = newClient
             deviceID = newClient.deviceID()
