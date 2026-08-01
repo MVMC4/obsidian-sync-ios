@@ -208,6 +208,23 @@ func TestRealEngineConfiguresPeerFolderAndScan(t *testing.T) {
 	if err := client.Scan("obsidian-vault"); err != nil {
 		t.Fatalf("Scan() error = %v", err)
 	}
+	statusJSON, err := client.FolderStatusJSON("obsidian-vault", peer.DeviceID())
+	if err != nil {
+		t.Fatalf("FolderStatusJSON() error = %v", err)
+	}
+	var status folderStatusSnapshot
+	if err := json.Unmarshal([]byte(statusJSON), &status); err != nil {
+		t.Fatalf("FolderStatusJSON() returned invalid JSON: %v", err)
+	}
+	if status.SchemaVersion != 1 || status.FolderID != "obsidian-vault" {
+		t.Fatalf("folder status identity = %#v", status)
+	}
+	if status.PeerConnected {
+		t.Fatal("peer is connected without a running remote engine")
+	}
+	if status.UpToDate {
+		t.Fatal("disconnected peer is reported as up to date")
+	}
 
 	eng := client.engine.(*syncthingEngine)
 	peerID, _ := protocol.DeviceIDFromString(peer.DeviceID())
@@ -223,6 +240,29 @@ func TestRealEngineConfiguresPeerFolderAndScan(t *testing.T) {
 	}
 	if folder.FSWatcherEnabled {
 		t.Fatal("folder watcher is enabled, want manual foreground scans")
+	}
+}
+
+func TestCompletionPercentage(t *testing.T) {
+	tests := []struct {
+		name        string
+		globalBytes int64
+		needBytes   int64
+		needDeletes int
+		want        float64
+	}{
+		{name: "empty folder", want: 100},
+		{name: "half complete", globalBytes: 100, needBytes: 50, want: 50},
+		{name: "pending delete", globalBytes: 100, needDeletes: 1, want: 95},
+		{name: "clamps invalid need", globalBytes: 100, needBytes: 200, want: 0},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := completionPercentage(test.globalBytes, test.needBytes, test.needDeletes); got != test.want {
+				t.Fatalf("completionPercentage() = %v, want %v", got, test.want)
+			}
+		})
 	}
 }
 

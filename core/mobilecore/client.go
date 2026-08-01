@@ -36,6 +36,7 @@ type configurationEngine interface {
 	ConfigurePeer(deviceID, name, addressesJSON string) error
 	ConfigureFolder(folderID, folderPath, label, peerDeviceID string) error
 	Scan(folderID string) error
+	FolderStatusJSON(folderID, peerDeviceID string) (string, error)
 }
 
 // Client serializes lifecycle operations and projects engine state into values
@@ -199,6 +200,17 @@ func (c *Client) Scan(folderID string) error {
 		return err
 	}
 	return eng.Scan(folderID)
+}
+
+// FolderStatusJSON returns a versioned sync snapshot for one configured vault
+// and peer. It is intended for foreground polling by the Swift session
+// controller.
+func (c *Client) FolderStatusJSON(folderID, peerDeviceID string) (string, error) {
+	eng, err := c.runningConfigurationEngine()
+	if err != nil {
+		return "", err
+	}
+	return eng.FolderStatusJSON(folderID, peerDeviceID)
 }
 
 func (c *Client) runningConfigurationEngine() (configurationEngine, error) {
