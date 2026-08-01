@@ -36,3 +36,15 @@ not exist.
 - `go test -race -coverprofile=coverage.out ./...`: passed
 - Statement coverage: 74.2%
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30691040646
+
+## 2026-08-01 — Real Syncthing adapter tests
+
+- `TestNewClientPersistsSyncthingIdentity`: passed
+- `TestRealSyncthingEngineStartsAndStops`: passed
+- Full `go test -tags noassets -cover ./...`: passed
+- `go vet -tags noassets ./...`: passed
+- Local statement coverage: 74.3%
+- One default build attempt failed because upstream generated web assets were
+  absent; all commands now consistently use the correct `noassets` build tag
+- Local `-race` attempt was not runnable because CGO is disabled on this Windows
+  toolchain; race-enabled verification is delegated to GitHub Actions on Ubuntu

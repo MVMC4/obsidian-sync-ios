@@ -37,11 +37,10 @@ jobs:
           fi
 
       - name: Vet
-        run: go vet ./...
+        run: go vet -tags noassets ./...
 
       - name: Test with race detector and coverage
-        run: go test -race -coverprofile=coverage.out ./...
+        run: go test -tags noassets -race -coverprofile=coverage.out ./...
 
       - name: Print coverage summary
         run: go tool cover -func=coverage.out
-

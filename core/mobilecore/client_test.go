@@ -70,6 +70,20 @@ func TestClientStartsAndStopsIdempotently(t *testing.T) {
 	}
 }
 
+func TestClientCannotRestartAStoppedOneShotEngine(t *testing.T) {
+	client := newClient(&fakeEngine{})
+
+	if err := client.Start(); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := client.Stop(); err != nil {
+		t.Fatalf("Stop() error = %v", err)
+	}
+	if err := client.Start(); !errors.Is(err, errTerminalState) {
+		t.Fatalf("restart error = %v, want %v", err, errTerminalState)
+	}
+}
+
 func TestClientRecordsStartFailure(t *testing.T) {
 	startErr := errors.New("certificate unavailable")
 	client := newClient(&fakeEngine{startErr: startErr})
@@ -111,5 +125,45 @@ func TestStatusJSONUsesVersionedPrimitiveContract(t *testing.T) {
 	}
 	if got.DeviceID != "DEVICE-ID" {
 		t.Fatalf("deviceID = %q, want DEVICE-ID", got.DeviceID)
+	}
+}
+
+func TestNewClientPersistsSyncthingIdentity(t *testing.T) {
+	statePath := t.TempDir()
+
+	first, err := NewClient(statePath)
+	if err != nil {
+		t.Fatalf("first NewClient() error = %v", err)
+	}
+	second, err := NewClient(statePath)
+	if err != nil {
+		t.Fatalf("second NewClient() error = %v", err)
+	}
+
+	if first.DeviceID() == "" {
+		t.Fatal("first DeviceID() is empty")
+	}
+	if second.DeviceID() != first.DeviceID() {
+		t.Fatalf("persisted DeviceID() = %q, want %q", second.DeviceID(), first.DeviceID())
+	}
+}
+
+func TestRealSyncthingEngineStartsAndStops(t *testing.T) {
+	client, err := NewClient(t.TempDir())
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+
+	if err := client.Start(); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if got := client.State(); got != StateRunning {
+		t.Fatalf("running state = %q, want %q", got, StateRunning)
+	}
+	if err := client.Stop(); err != nil {
+		t.Fatalf("Stop() error = %v", err)
+	}
+	if got := client.State(); got != StateStopped {
+		t.Fatalf("stopped state = %q, want %q", got, StateStopped)
 	}
 }

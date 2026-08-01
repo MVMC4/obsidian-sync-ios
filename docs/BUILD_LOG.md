@@ -34,3 +34,18 @@ will remain attached to their corresponding workflow runs.
 - Result: passed in 28 seconds
 - Verified: checkout, Go setup, formatting, vet, race-enabled tests, and coverage
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30691040646
+
+## 2026-08-01 — Real Syncthing adapter
+
+- Host: Windows amd64
+- Go: 1.25.12
+- Syncthing: upstream `v2.1.1` release commit, represented by Go pseudo-version
+  `v1.30.0-rc.1.0.20260525132207-6be1ff848028`
+- Result: compiled and started a real in-process Syncthing node, then completed
+  an orderly shutdown
+- Runtime exercised: certificate generation, persistent device ID, configuration,
+  SQLite database, discovery, relay service, TCP and QUIC listeners
+- Required build tag: `noassets`, because the native application disables and
+  excludes Syncthing's generated web UI
+- Local race detector: not available because this Windows toolchain has CGO
+  disabled; the Ubuntu CI job remains the race-enabled verification environment

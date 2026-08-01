@@ -11,9 +11,11 @@ filesystem access, and mobile bindings are introduced.
 Run the current checks with:
 
 ```sh
-go test ./...
-go vet ./...
+go test -tags noassets ./...
+go vet -tags noassets ./...
 ```
 
-The XCFramework can only be generated and verified on macOS with Xcode.
+The `noassets` tag excludes Syncthing's generated web UI, which this native app
+does not start or distribute.
 
+The XCFramework can only be generated and verified on macOS with Xcode.

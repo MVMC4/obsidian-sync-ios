@@ -18,10 +18,12 @@ cert.pem
 key.pem
 config.xml
 index-v*.db/
+coverage
+coverage.out
+*.coverprofile
 
 # Editors and operating systems
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
-

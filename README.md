@@ -79,3 +79,4 @@ Original code in this repository is available under the [MIT License](LICENSE).
 Third-party dependencies retain their own licenses. In particular, Syncthing is
 licensed under MPL-2.0; distributing an application that includes it must also
 preserve the notices and source-code obligations that apply to that dependency.
+See [third-party notices](THIRD_PARTY_NOTICES.md) for the pinned source version.

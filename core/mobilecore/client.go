@@ -18,8 +18,9 @@ const (
 )
 
 var (
-	errBusy     = errors.New("engine lifecycle operation already in progress")
-	errNoEngine = errors.New("syncthing engine is not configured")
+	errBusy          = errors.New("engine lifecycle operation already in progress")
+	errNoEngine      = errors.New("syncthing engine is not configured")
+	errTerminalState = errors.New("client cannot restart after stopping or failing")
 )
 
 // engine is deliberately smaller than Syncthing's application type. The
@@ -53,6 +54,17 @@ func newClient(eng engine) *Client {
 	}
 }
 
+// NewClient creates a mobile client whose private Syncthing state is rooted at
+// statePath. The path must be in the application's own container, not inside a
+// synchronized vault.
+func NewClient(statePath string) (*Client, error) {
+	eng, err := newSyncthingEngine(statePath)
+	if err != nil {
+		return nil, err
+	}
+	return newClient(eng), nil
+}
+
 // Start starts the configured engine once. Repeated calls while already
 // running are harmless; overlapping lifecycle operations return an error.
 func (c *Client) Start() error {
@@ -64,6 +76,9 @@ func (c *Client) Start() error {
 	case StateStarting, StateStopping:
 		c.mu.Unlock()
 		return errBusy
+	case StateStopped, StateFailed:
+		c.mu.Unlock()
+		return errTerminalState
 	}
 
 	if c.engine == nil {
