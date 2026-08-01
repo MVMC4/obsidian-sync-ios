@@ -172,3 +172,15 @@ will remain attached to their corresponding workflow runs.
 - Verified: XCFramework, generated Xcode project, linked app, dashboard compile,
   Simulator installation, session/profile tests, and uploaded framework artifact
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30695630517
+
+## 2026-08-01 — Physical-readiness hardening
+
+- Revision: `335d190`
+- Result: full iOS workflow passed in 4 minutes 44 seconds
+- Added: Local Network usage declaration, expanded desktop-sharing instructions,
+  consecutive engine sessions with stable identity, coordinated conflict-copy
+  scan, bounded relative-path results, and distinct conflict UI
+- Verified: linked compile, two real embedded lifecycle cycles, session cleanup,
+  conflict scanning and result capping, Simulator installation, all prior tests,
+  and XCFramework artifact upload
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30695851603

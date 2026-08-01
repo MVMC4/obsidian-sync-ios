@@ -53,6 +53,7 @@ See:
 - [Build and installation guide](docs/BUILDING.md)
 - [Build log](docs/BUILD_LOG.md)
 - [Test log](docs/TEST_LOG.md)
+- [Physical iPad test checklist](docs/PHYSICAL_IPAD_TEST_CHECKLIST.md)
 - [Current status](STATUS.md)
 
 ## Repository layout

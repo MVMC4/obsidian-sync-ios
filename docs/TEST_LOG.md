@@ -109,3 +109,16 @@ not exist.
 - Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30695630517
 - Real desktop-to-iPad transfer, conflict, interruption, and Obsidian visibility:
   not run; these remain physical-device gates
+
+## 2026-08-01 — Repeat-session and conflict tests
+
+- `SyncthingBridgeTests`: two complete start/stop cycles passed with the same
+  persistent device ID
+- `SyncSessionControllerTests`: repeated clean sessions and conflict-attention
+  terminal state passed
+- `VaultConflictScannerTests`: relative-path detection, ordinary-file exclusion,
+  deterministic sorting, and result cap passed
+- All native tests passed on iPad Pro 11-inch (M4) Simulator with iOS 18.5
+- Run: https://github.com/MVMC4/obsidian-sync-ios/actions/runs/30695851603
+- Local Network permission prompt and actual LAN traffic: not testable in this
+  automation and still require the physical checklist

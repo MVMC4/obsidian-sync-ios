@@ -37,6 +37,8 @@ Then:
 7. Connect the iPad to the Mac, accept the trust prompt, and enable Developer
    Mode when iPadOS requests it.
 8. Select the iPad as the run destination and press **Run**.
+9. Accept the app's Local Network permission prompt so it can discover and
+   connect to Syncthing peers on the LAN.
 
 Xcode registers the device, creates a development provisioning profile, signs
 the app, installs it, launches it, and attaches the debugger.
@@ -44,6 +46,9 @@ the app, installs it, launches it, and attaches the debugger.
 No jailbreak, custom tablet sandbox, or Android-style APK sideloading is used.
 The application's normal folder picker requests permission for the Obsidian
 vault after the signed app is running.
+
+Use `docs/PHYSICAL_IPAD_TEST_CHECKLIST.md` for the first device install and
+end-to-end transfer. A Simulator result must not be substituted for that gate.
 
 The generated `.xcodeproj` is intentionally not committed. `app/project.yml` is
 the reviewable source of truth, which prevents personal signing settings and

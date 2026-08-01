@@ -24,6 +24,8 @@ Phase 0 — feasibility gates.
   implemented with cleanup, cancellation, timeout, and stable-result tests.
 - Functional SwiftUI dashboard supports vault selection, pairing, settings,
   sync start/stop, two-sided progress, and permission diagnostics.
+- Local Network permission declaration, repeat-session identity verification,
+  and bounded conflict-copy reporting implemented and Simulator-tested.
 
 ## Next concrete task
 
@@ -37,7 +39,8 @@ Build a tiny SwiftUI device spike on macOS that:
 
 The code for this spike and the first complete manual session path is complete.
 The remaining gate is signing and executing it on physical hardware against a
-disposable vault and a real Windows or Linux peer.
+disposable vault and a real Windows or Linux peer. Follow
+`docs/PHYSICAL_IPAD_TEST_CHECKLIST.md` and record the exact environment/results.
 
 ## Exit condition
 
