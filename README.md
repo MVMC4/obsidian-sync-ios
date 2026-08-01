@@ -39,6 +39,9 @@ See:
 - [Project plan](docs/PROJECT_PLAN.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Decisions and risks](docs/DECISIONS.md)
+- [Build and installation guide](docs/BUILDING.md)
+- [Build log](docs/BUILD_LOG.md)
+- [Test log](docs/TEST_LOG.md)
 - [Current status](STATUS.md)
 
 ## Repository layout
