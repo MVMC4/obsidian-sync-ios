@@ -157,4 +157,13 @@ final class SyncthingBridge: ObservableObject, SyncEngineControlling {
         try client.stop()
         state = client.state()
     }
+
+    nonisolated func normalizeDeviceID(_ value: String) throws -> String {
+        var normalizationError: NSError?
+        let normalized = MobilecoreNormalizeDeviceID(value, &normalizationError)
+        if let normalizationError {
+            throw normalizationError
+        }
+        return normalized
+    }
 }

@@ -3,6 +3,18 @@ import XCTest
 
 final class SyncthingBridgeTests: XCTestCase {
     @MainActor
+    func testDeviceIDNormalizationUsesSyncthingChecksums() throws {
+        let bridge = SyncthingBridge()
+        let canonical = "AIR6LPZ-7K4PTTV-UXQSMUU-CPQ5YWH-OEDFIIQ-JUG777G-2YQXXR5-YD6AWQR"
+
+        XCTAssertEqual(
+            try bridge.normalizeDeviceID("  \(canonical.lowercased())  "),
+            canonical
+        )
+        XCTAssertThrowsError(try bridge.normalizeDeviceID("not-a-device-id"))
+    }
+
+    @MainActor
     func testEmbeddedEngineCreatesIdentityStartsAndStops() throws {
         let bridge = SyncthingBridge()
 

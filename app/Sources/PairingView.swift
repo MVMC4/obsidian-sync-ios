@@ -5,6 +5,7 @@ struct PairingView: View {
 
     let existingProfile: SyncProfile?
     let localDeviceID: String?
+    let normalizeDeviceID: (String) throws -> String
     let onSave: (SyncProfile) throws -> Void
 
     @State private var peerDeviceID: String
@@ -13,14 +14,17 @@ struct PairingView: View {
     @State private var folderID: String
     @State private var folderLabel: String
     @State private var errorMessage: String?
+    @State private var isShowingScanner = false
 
     init(
         existingProfile: SyncProfile?,
         localDeviceID: String?,
+        normalizeDeviceID: @escaping (String) throws -> String,
         onSave: @escaping (SyncProfile) throws -> Void
     ) {
         self.existingProfile = existingProfile
         self.localDeviceID = localDeviceID
+        self.normalizeDeviceID = normalizeDeviceID
         self.onSave = onSave
         _peerDeviceID = State(initialValue: existingProfile?.peerDeviceID ?? "")
         _peerName = State(initialValue: existingProfile?.peerName ?? "Desktop")
@@ -37,9 +41,16 @@ struct PairingView: View {
         NavigationStack {
             Form {
                 Section("This iPad") {
-                    Text(localDeviceID ?? "Preparing device identity…")
-                        .font(.caption.monospaced())
-                        .textSelection(.enabled)
+                    if let localDeviceID {
+                        DeviceIDQRCode(deviceID: localDeviceID)
+                            .frame(maxWidth: .infinity)
+                        Text(localDeviceID)
+                            .font(.caption.monospaced())
+                            .textSelection(.enabled)
+                    } else {
+                        Text("Preparing device identity…")
+                            .font(.caption.monospaced())
+                    }
                     Text("Add this device ID to Syncthing on your computer as a remote device.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -53,6 +64,9 @@ struct PairingView: View {
                         .font(.caption.monospaced())
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
+                    Button("Scan device-ID QR code", systemImage: "qrcode.viewfinder") {
+                        isShowingScanner = true
+                    }
                     TextField("Device name", text: $peerName)
                     TextField("Optional TCP address", text: $address)
                         .textInputAutocapitalization(.never)
@@ -90,14 +104,20 @@ struct PairingView: View {
                         .fontWeight(.semibold)
                 }
             }
+            .sheet(isPresented: $isShowingScanner) {
+                QRCodeScannerSheet { payload in
+                    handleScannedPayload(payload)
+                }
+            }
         }
     }
 
     private func save() {
         do {
+            let normalizedPeerDeviceID = try normalizeDeviceID(peerDeviceID)
             try onSave(
                 SyncProfile(
-                    peerDeviceID: peerDeviceID,
+                    peerDeviceID: normalizedPeerDeviceID,
                     peerName: peerName,
                     addresses: address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                         ? ["dynamic"]
@@ -110,5 +130,17 @@ struct PairingView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func handleScannedPayload(_ payload: String) {
+        do {
+            peerDeviceID = try DeviceIDPayloadParser(
+                normalize: normalizeDeviceID
+            ).parse(payload)
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isShowingScanner = false
     }
 }

@@ -5,12 +5,32 @@ import (
 	"errors"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/syncthing/syncthing/lib/protocol"
 )
+
+func TestNormalizeDeviceID(t *testing.T) {
+	const canonical = "AIR6LPZ-7K4PTTV-UXQSMUU-CPQ5YWH-OEDFIIQ-JUG777G-2YQXXR5-YD6AWQR"
+
+	got, err := NormalizeDeviceID("  " + strings.ToLower(canonical) + "  ")
+	if err != nil {
+		t.Fatalf("NormalizeDeviceID() error = %v", err)
+	}
+	if got != canonical {
+		t.Fatalf("NormalizeDeviceID() = %q, want %q", got, canonical)
+	}
+
+	if _, err := NormalizeDeviceID(""); err == nil {
+		t.Fatal("NormalizeDeviceID(empty) error = nil, want error")
+	}
+	if _, err := NormalizeDeviceID("not-a-device-id"); err == nil {
+		t.Fatal("NormalizeDeviceID(invalid) error = nil, want error")
+	}
+}
 
 func temporarySyncedFolder(t *testing.T) string {
 	t.Helper()

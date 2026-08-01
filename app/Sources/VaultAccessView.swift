@@ -76,6 +76,7 @@ struct VaultAccessView: View {
                 PairingView(
                     existingProfile: profiles.profile,
                     localDeviceID: engine.deviceID,
+                    normalizeDeviceID: engine.normalizeDeviceID,
                     onSave: profiles.save
                 )
                 .presentationDetents([.large])

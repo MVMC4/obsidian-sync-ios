@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
+
+	"github.com/syncthing/syncthing/lib/protocol"
 )
 
 const (
@@ -46,6 +49,19 @@ type Client struct {
 	engine    engine
 	state     string
 	lastError string
+}
+
+// NormalizeDeviceID validates a Syncthing device ID, including its check
+// digits, and returns the canonical uppercase, hyphenated representation.
+func NormalizeDeviceID(value string) (string, error) {
+	deviceID, err := protocol.DeviceIDFromString(strings.TrimSpace(value))
+	if err != nil {
+		return "", fmt.Errorf("parse device ID: %w", err)
+	}
+	if deviceID == protocol.EmptyDeviceID {
+		return "", errors.New("device ID is empty")
+	}
+	return deviceID.String(), nil
 }
 
 type statusSnapshot struct {

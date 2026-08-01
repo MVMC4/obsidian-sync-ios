@@ -26,6 +26,8 @@
 	<true/>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Vault Sync connects directly to your Syncthing devices to synchronize the selected vault.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Vault Sync uses the camera only to scan a Syncthing device-ID QR code during pairing.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
