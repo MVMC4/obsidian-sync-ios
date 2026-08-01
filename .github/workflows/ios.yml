@@ -32,3 +32,38 @@ jobs:
           -destination 'generic/platform=iOS Simulator'
           CODE_SIGNING_ALLOWED=NO
           build
+
+      - name: Test on an iPad Simulator
+        shell: bash
+        run: |
+          simulator_list="$RUNNER_TEMP/ios-simulators.json"
+          xcrun simctl list devices available -j > "$simulator_list"
+          destination_id="$(python3 - "$simulator_list" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as handle:
+              runtimes = json.load(handle)["devices"]
+
+          available = [
+              device
+              for runtime, devices in runtimes.items()
+              if ".iOS-" in runtime
+              for device in devices
+              if device.get("isAvailable", False)
+          ]
+          ipads = [device for device in available if device["name"].startswith("iPad")]
+          candidates = ipads or available
+          if not candidates:
+              raise SystemExit("No available iOS Simulator was found")
+          print(candidates[0]["udid"])
+          PY
+          )"
+
+          xcodebuild \
+            -project app/ObsidianSync.xcodeproj \
+            -scheme ObsidianSync \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=$destination_id" \
+            CODE_SIGNING_ALLOWED=NO \
+            test
