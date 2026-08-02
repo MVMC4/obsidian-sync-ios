@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup and troubleshooting guide
+    url: https://github.com/MVMC4/obsidian-sync-ios/blob/main/docs/WINDOWS_TO_IPAD_AND_OBSIDIAN.md
+    about: Read the tested Windows-to-iPad setup and troubleshooting workflow first.
+  - name: Security policy
+    url: https://github.com/MVMC4/obsidian-sync-ios/security/policy
+    about: Do not disclose vulnerabilities or sensitive information in a public issue.

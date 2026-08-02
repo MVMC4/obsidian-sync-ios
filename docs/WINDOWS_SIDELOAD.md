@@ -1,5 +1,11 @@
 # Install on an iPad from Windows
 
+This page is the concise installation-only reference. For the proven complete
+workflow—including desktop Syncthing sharing, creating the Obsidian-local vault,
+Files Favorites, two-way verification, backups, and migration from the iPad
+root—use
+[Windows to iPad to Obsidian: complete setup guide](WINDOWS_TO_IPAD_AND_OBSIDIAN.md).
+
 This route uses GitHub Actions to compile the app on a hosted Mac, then uses
 Sideloadly on Windows to apply a personal development signature and install the
 IPA. It does not require a local Mac or a jailbroken iPad.
@@ -54,7 +60,7 @@ days; rerun the workflow whenever a fresh build is needed.
 4. Keep the default Apple ID sideload mode and start the installation.
 5. Approve any two-factor authentication prompt from Apple.
 6. Wait until Sideloadly reports a successful installation, then launch
-   **ObsidianSync** on the iPad.
+   **Vault Sync** on the iPad.
 
 If iPadOS blocks the developer app, open **Settings > General > VPN & Device
 Management**, select the development identity, and trust it. The exact wording

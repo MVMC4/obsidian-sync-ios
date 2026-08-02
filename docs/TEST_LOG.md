@@ -221,3 +221,52 @@ not exist.
   readable in Settings
 - Physical LAN transfer and Obsidian visibility remain to be run with the new
   build and a disposable vault
+
+## 2026-08-02 — Physical Windows-to-iPad bidirectional verification
+
+### Environment
+
+- Source revision installed: `67afc03`
+- Build source: GitHub-hosted macOS runner
+- Windows installer: Sideloadly 0.60
+- Target: physical iPad over USB
+- Sync topology: existing desktop Syncthing folder shared to an iPad vault
+
+### Passed on physical hardware
+
+- Downloaded the unsigned IPA artifact on Windows and installed it with Sideloadly.
+- Trusted the Apple developer profile, launched Vault Sync, and granted Files access.
+- Saved the desktop device ID and exact Syncthing folder ID.
+- Observed a real peer connection, foreground progress, and incoming Recent activity.
+- Received the existing desktop vault on iPad.
+- Opened synchronized vault content from Obsidian on iPad.
+- Created and edited a Markdown file on iPad; the change reached the laptop.
+- Deleted that test file on iPad; the deletion reached the laptop.
+
+This is direct physical proof that the configured folder operates in both directions
+and that deletions propagate. It must therefore be treated as synchronization, not as
+a backup mechanism.
+
+### Findings
+
+- A vault placed directly under `On My iPad` was not selectable as an Obsidian vault.
+  Obsidian access works when the vault is created or copied under
+  `On My iPad/Obsidian/<VaultName>` and selected there.
+- Adding the vault to Files Favorites makes repeated selection easier.
+- Foreground progress occasionally appeared stalled and then resumed. The engine has
+  a bounded foreground session, so large transfers may require another session.
+
+### Evidence
+
+- `docs/images/vault-sync-active-session.jpg`
+- `docs/images/vault-sync-recent-activity.jpg`
+- `docs/images/obsidian-vault-on-ipad.jpg`
+
+### Still unverified
+
+- simultaneous-edit conflict behavior
+- revoked Files permission and low-storage recovery
+- interruption during a large attachment transfer and checksum recovery
+- app termination, foreground resume, restart, and bookmark restoration
+- 10,000-file and 250 MB scale targets
+- multiple seven-day free-signing refresh cycles

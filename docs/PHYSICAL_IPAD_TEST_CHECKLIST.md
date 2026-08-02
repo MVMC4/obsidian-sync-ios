@@ -3,6 +3,16 @@
 Use a disposable vault with a separate backup. Do not use the only copy of a
 real notes collection for these tests.
 
+## Recorded physical result
+
+The focused feasibility gate passed on 2026-08-02 using a GitHub-built unsigned IPA,
+Windows, Sideloadly 0.60, and a physical iPad. The test proved a real peer connection,
+desktop-to-iPad transfer, Obsidian access, iPad-to-desktop transfer, and deletion
+propagation. See `docs/TEST_LOG.md` for evidence and the exact remaining gaps.
+
+The unchecked rows below remain the production-hardening matrix; the focused pass is
+not a substitute for completing them.
+
 ## Record the environment
 
 - Date:

@@ -297,3 +297,19 @@ will remain attached to their corresponding workflow runs.
   on Windows
 - An earlier build at `c4826d2` exposed one Swift closure compile error; the
   corrected revision above completed the entire workflow
+
+## 2026-08-02 — Windows sideload and physical launch verified
+
+- Installed the GitHub-built unsigned IPA for revision `67afc03` from Windows with
+  Sideloadly 0.60.
+- Used the Apple web-distributed iTunes/iCloud components required by Sideloadly.
+- Completed developer-profile trust, Developer Mode where required, USB installation,
+  and first launch on a physical iPad.
+- Confirmed that a developer without a locally owned Mac can use the GitHub-hosted
+  macOS workflow for compilation and Windows for installation/testing.
+- Completed physical desktop-to-iPad, iPad-to-desktop, and delete-propagation checks;
+  see `docs/TEST_LOG.md`.
+- Captured the active session, Recent activity, and Obsidian vault evidence now stored
+  in `docs/images/`.
+- The reproducible end-to-end procedure is documented in
+  `docs/WINDOWS_TO_IPAD_AND_OBSIDIAN.md`.
